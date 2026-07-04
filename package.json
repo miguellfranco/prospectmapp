@@ -5,8 +5,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "push-git": "node C:\\Users\\berto\\.gemini\\antigravity\\brain\\2bc9b442-d816-4e7d-b3e5-992b99bc9856\\scratch\\push_to_github.js"
+    "lint": "next lint"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/safe-seed.ts"
