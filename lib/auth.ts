@@ -17,24 +17,21 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null
 
         // =========================================================================
-        // ATENÇÃO / DEVELOPER WARNING (Bypass de Login para Teste)
-        // Se os tokens acabarem ou se você precisar acessar a plataforma rapidamente:
-        // Defina MASTER_EMAIL e MASTER_PASSWORD no arquivo .env (ignorado pelo git).
-        // Ao fazer login com esses dados, a conta é autenticada automaticamente.
-        // Se ela não existir no banco de dados, ela será criada com plano Vitalício ativo.
+        // Login de Administrador
+        // MASTER_EMAIL e MASTER_PASSWORD devem ser definidos nas variáveis de
+        // ambiente (Vercel/​.env, nunca commitados). Sem essas duas variáveis
+        // configuradas, o login master fica desativado — não há credencial
+        // padrão embutida no código-fonte.
         // =========================================================================
-        const masterEmail = 'admin@prospectmap.com.br'
-        const masterPassword = 'prospectmap_master_2026'
-        
-        const envEmail = process.env.MASTER_EMAIL || 'admin@prospectmap.com.br'
-        const envPassword = process.env.MASTER_PASSWORD || 'prospectmap_master_2026'
+        const envEmail = process.env.MASTER_EMAIL
+        const envPassword = process.env.MASTER_PASSWORD
 
         const inputEmail = credentials.email.toLowerCase()
         const inputPassword = credentials.password
 
-        const isMaster = 
-          (inputEmail === masterEmail && inputPassword === masterPassword) ||
-          (inputEmail === envEmail.toLowerCase() && inputPassword === envPassword)
+        const isMaster =
+          !!envEmail && !!envPassword &&
+          inputEmail === envEmail.toLowerCase() && inputPassword === envPassword
 
         if (isMaster) {
           const targetEmail = inputEmail
@@ -51,7 +48,7 @@ export const authOptions: NextAuthOptions = {
                   name: 'Administrador ProspectMap',
                   plan: 'vitalicio',
                   planStatus: 'active',
-                  referralCode: targetEmail === masterEmail ? 'ADMINPM' : 'ADMINOLD',
+                  referralCode: 'ADMINPM',
                   leadsResetDate: new Date(),
                 },
               })

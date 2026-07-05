@@ -51,9 +51,17 @@ Para evitar erros como o "Erro ao prospectar" quando o banco de dados Supabase e
 2.  **Sales Fallback (`prisma/local_sales_fallback.json`):**
     *   Registra faturamentos e vendas localmente para manter o Dashboard ativo e o ranking funcional durante quedas de banco.
 3.  **Configurações e Perfil (`/api/me`):**
-    *   Protegido contra falhas do Prisma para manter o painel administrativo acessível via `/bypass`.
+    *   Protegido contra falhas do Prisma para manter o painel administrativo acessível.
 
 **⚠️ Regra para novas IAs:** Sempre mantenha as rotas de API protegidas com `try/catch` que fazem o chaveamento para os arquivos locais caso a conexão com a variável `DATABASE_URL` falhe.
+
+---
+
+## 🔐 Login de Administrador
+
+*   O login master é controlado **exclusivamente** pelas variáveis de ambiente `MASTER_EMAIL` e `MASTER_PASSWORD` (definidas na Vercel, nunca no código). Se elas não estiverem configuradas, o login master fica desativado — **não existe mais credencial padrão hardcoded no código-fonte** (isso foi removido em 2026-07 por ser uma vulnerabilidade: qualquer pessoa que lesse o repositório conseguia logar como admin).
+*   A rota pública `/bypass` (que logava qualquer visitante como admin sem senha) foi **removida** por ser uma falha de segurança crítica. Para acessar como admin, faça login normalmente em `/login` com o e-mail/senha definidos em `MASTER_EMAIL`/`MASTER_PASSWORD`.
+*   **Regra para novas IAs:** nunca reintroduza credenciais de admin fixas no código nem rotas de bypass sem autenticação.
 
 ---
 
