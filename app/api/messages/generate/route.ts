@@ -121,17 +121,17 @@ DIRETRIZES DA ABORDAGEM:
    - Escreva EXCLUSIVAMENTE o texto da mensagem comercial pronta para copiar e enviar, sem aspas, explicações de IA, observações ou tags.`
 
   try {
-    const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.ABACUSAI_API_KEY}`,
+        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        stream: false, // Standard fetch works better than custom streaming in offline wrapper fallback
+        model: 'claude-haiku-4-5',
         max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }],
       }),
     })
 
@@ -142,7 +142,7 @@ DIRETRIZES DA ABORDAGEM:
     }
 
     const data = await response.json()
-    const full = data.choices?.[0]?.message?.content || ''
+    const full = data.content?.[0]?.text || ''
 
     if (full) {
       try {

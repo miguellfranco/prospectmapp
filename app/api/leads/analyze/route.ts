@@ -72,17 +72,17 @@ INSTRUÇÕES OBRIGATÓRIAS:
 
 Gere apenas o texto da proposta/análise pronta.`
 
-    const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.ABACUSAI_API_KEY}`,
+        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        stream: false,
+        model: 'claude-haiku-4-5',
         max_tokens: 600,
+        messages: [{ role: 'user', content: prompt }],
       }),
     })
 
@@ -93,7 +93,7 @@ Gere apenas o texto da proposta/análise pronta.`
     }
 
     const data = await response.json()
-    const analysis = data.choices?.[0]?.message?.content || 'Não foi possível gerar a análise deste lead.'
+    const analysis = data.content?.[0]?.text || 'Não foi possível gerar a análise deste lead.'
 
     return NextResponse.json({ analysis })
   } catch (e) {
