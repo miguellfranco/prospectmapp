@@ -136,6 +136,26 @@ model Commission {
   @@index([affiliateId])
 }
 
+model ScrapedBusiness {
+  id              String    @id @default(cuid())
+  niche           String
+  city            String
+  businessName    String
+  phone           String?
+  address         String?
+  rating          Float?
+  reviewCount     Int?
+  hasWebsite      Boolean   @default(false)
+  instagramUrl    String?
+  whatsappUrl     String?
+  apifyPlaceId    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([niche, city, businessName])
+  @@index([niche, city])
+}
+
 model PixelPing {
   id        String   @id @default(cuid())
   userId    String

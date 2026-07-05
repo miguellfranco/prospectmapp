@@ -149,11 +149,82 @@ export async function POST(req: NextRequest) {
 
     // Fetch or generate new ones if we don't have enough saved locally for this page
     if (pagedLeads.length < limit) {
-      const needed = limit - pagedLeads.length
+      let needed = limit - pagedLeads.length
       let newlyCreated: any[] = []
 
-      // 1. TENTATIVA COM APIFY GOOGLE MAPS SCRAPER
+      // 0. REAPROVEITAR CACHE GLOBAL (compartilhado entre todos os usuários) ANTES DE GASTAR CRÉDITOS DA APIFY
+      const cacheNiche = niche
+      const cacheCity = city.trim().toLowerCase()
+      const CACHE_MAX_AGE_DAYS = 60
       try {
+        const staleCutoff = new Date(Date.now() - CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
+        const existingNames = new Set(existingLeads.map((l: any) => l.businessName.toLowerCase()))
+        const cached = await prisma.scrapedBusiness.findMany({
+          where: { niche: cacheNiche, city: cacheCity, updatedAt: { gte: staleCutoff } },
+          orderBy: { updatedAt: 'desc' },
+          take: needed * 3, // margem para descartar duplicados que o usuário já tem
+        })
+
+        for (const item of cached) {
+          if (newlyCreated.length >= needed) break
+          if (existingNames.has(item.businessName.toLowerCase())) continue
+
+          const rating = item.rating ?? 4.0
+          const reviewCount = item.reviewCount ?? 0
+          const yearsWithoutSite = item.hasWebsite ? 0 : 1 + Math.floor(Math.random() * 6)
+
+          let score = 5.0
+          if (rating >= 4.5) score += 2.0
+          else if (rating >= 4.0) score += 1.0
+          if (reviewCount >= 100) score += 1.5
+          if (yearsWithoutSite >= 2) score += 1.0
+          score = Math.max(0.0, Math.min(10.0, score))
+
+          let tier = 'cold'
+          if (score >= 8.0) tier = 'hot'
+          else if (score >= 5.0) tier = 'warm'
+
+          const leadData = {
+            userId: user.id,
+            businessName: item.businessName,
+            phone: item.phone || null,
+            city: item.address || city,
+            niche,
+            rating,
+            reviewCount,
+            hasWebsite: item.hasWebsite,
+            yearsWithoutSite,
+            score: Math.round(score),
+            tier,
+            status: 'novo',
+            apifyPlaceId: item.apifyPlaceId || null,
+            instagramUrl: item.instagramUrl || null,
+            whatsappUrl: item.whatsappUrl || null,
+          }
+
+          let leadObj: any = null
+          try {
+            leadObj = await prisma.lead.create({ data: leadData })
+          } catch (dbError) {
+            const localLead = {
+              id: `local_${Math.random().toString(36).substring(2, 9)}`,
+              ...leadData,
+              viewed: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }
+            saveLocalLead(localLead)
+            leadObj = localLead
+          }
+          newlyCreated.push(leadObj)
+          existingNames.add(item.businessName.toLowerCase())
+        }
+      } catch (cacheError) {
+        console.warn('Global scrape cache lookup failed, proceeding to Apify/mock:', cacheError)
+      }
+
+      // 1. TENTATIVA COM APIFY GOOGLE MAPS SCRAPER (só roda se o cache global não cobriu tudo)
+      if (newlyCreated.length < needed) try {
         const apifyToken = process.env.APIFY_API_TOKEN
         if (!apifyToken) {
           throw new Error("Missing APIFY_API_TOKEN env var")
@@ -176,7 +247,7 @@ export async function POST(req: NextRequest) {
             const existingNames = new Set(existingLeads.map(l => l.businessName.toLowerCase()))
             const freshItems = items.filter(item => item.title && !existingNames.has(item.title.toLowerCase()))
 
-            for (let i = 0; i < Math.min(freshItems.length, needed); i++) {
+            for (let i = 0; i < Math.min(freshItems.length, needed - newlyCreated.length); i++) {
               const item = freshItems[i]
               const hasWebsite = !!item.website
               const inTopGoogle = hasWebsite ? Math.random() > 0.4 : false
@@ -230,6 +301,37 @@ export async function POST(req: NextRequest) {
                 leadObj = localLead
               }
               newlyCreated.push(leadObj)
+
+              // Grava no cache global compartilhado para outros usuários reaproveitarem sem gastar créditos da Apify
+              try {
+                await prisma.scrapedBusiness.upsert({
+                  where: { niche_city_businessName: { niche, city: cacheCity, businessName: item.title } },
+                  create: {
+                    niche,
+                    city: cacheCity,
+                    businessName: item.title,
+                    phone: leadData.phone,
+                    address: item.address || null,
+                    rating: leadData.rating,
+                    reviewCount: leadData.reviewCount,
+                    hasWebsite: leadData.hasWebsite,
+                    instagramUrl: leadData.instagramUrl,
+                    whatsappUrl: leadData.whatsappUrl,
+                    apifyPlaceId: item.placeId || null,
+                  },
+                  update: {
+                    phone: leadData.phone,
+                    address: item.address || null,
+                    rating: leadData.rating,
+                    reviewCount: leadData.reviewCount,
+                    hasWebsite: leadData.hasWebsite,
+                    instagramUrl: leadData.instagramUrl,
+                    whatsappUrl: leadData.whatsappUrl,
+                  },
+                })
+              } catch (cacheWriteError) {
+                console.warn('Failed to write global scrape cache (non-fatal):', cacheWriteError)
+              }
             }
           }
         }

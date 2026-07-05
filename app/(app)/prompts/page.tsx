@@ -228,6 +228,25 @@ const NICHE_TEMPLATES = [
   }
 ]
 
+// Entidade de conteúdo dinâmico que o dono do negócio vai preencher depois de pronto
+// (é isso que faz a estrutura sair "100% pronta, só faltando adicionar o conteúdo")
+const NICHE_CONTENT_ENTITY: Record<string, { table: string; label: string; fields: string[] }> = {
+  academia: { table: 'aulas', label: 'Aula/Treino', fields: ['nome', 'modalidade', 'dia_semana', 'horario', 'professor', 'vagas_totais', 'vagas_ocupadas', 'nivel'] },
+  barbearia: { table: 'servicos', label: 'Serviço', fields: ['nome', 'preco', 'duracao_minutos', 'categoria (corte/barba/combo)'] },
+  restaurante: { table: 'cardapio', label: 'Item do Cardápio', fields: ['nome', 'categoria', 'preco', 'descricao', 'foto_url', 'disponivel'] },
+  salao: { table: 'servicos', label: 'Serviço de Beleza', fields: ['nome', 'preco', 'duracao_minutos', 'categoria (manicure/cabelo/maquiagem)'] },
+  clinica: { table: 'profissionais', label: 'Profissional/Especialidade', fields: ['nome_profissional', 'especialidade', 'registro_profissional', 'foto_url', 'horarios_disponiveis'] },
+  pizzaria: { table: 'sabores', label: 'Sabor de Pizza', fields: ['nome', 'categoria (salgada/doce)', 'preco_broto', 'preco_grande', 'ingredientes'] },
+  petshop: { table: 'servicos_pet', label: 'Serviço Pet', fields: ['nome', 'especie_alvo (cão/gato)', 'porte', 'preco', 'duracao_minutos'] },
+  estetica: { table: 'tratamentos', label: 'Tratamento Estético', fields: ['nome', 'categoria (facial/corporal)', 'preco', 'numero_sessoes', 'descricao'] },
+  oficina: { table: 'servicos_mecanicos', label: 'Serviço Mecânico', fields: ['nome', 'categoria (revisao/funilaria/motor)', 'preco_estimado', 'tempo_estimado'] },
+  advocacia: { table: 'areas_atuacao', label: 'Área de Atuação', fields: ['nome', 'descricao', 'advogado_responsavel'] },
+  hamburgueria: { table: 'cardapio', label: 'Item do Cardápio', fields: ['nome', 'categoria', 'preco', 'ingredientes', 'foto_url'] },
+  dentista: { table: 'tratamentos_odonto', label: 'Tratamento Odontológico', fields: ['nome', 'descricao', 'preco_estimado', 'duracao_estimada'] },
+  construtora: { table: 'projetos', label: 'Projeto/Obra', fields: ['nome', 'categoria (residencial/comercial)', 'status (concluido/andamento)', 'fotos_url', 'descricao'] },
+  confeitaria: { table: 'cardapio_doces', label: 'Item do Cardápio', fields: ['nome', 'categoria (bolo/salgado/kit_festa)', 'preco', 'sabor', 'foto_url'] },
+}
+
 const NICHE_DESIGNS: Record<string, { icon: any; gradient: string }> = {
   'suplementos': { icon: Dumbbell, gradient: 'from-purple-600 to-indigo-950' },
   'muaythai': { icon: Flame, gradient: 'from-red-600 to-orange-950' },
@@ -460,6 +479,21 @@ export default function PromptsPage() {
       .replace(/{NICHO}/g, customNiche)
       .replace(/{TELEFONE}/g, phone || 'Telefone não cadastrado')
       .replace(/{DESCRICAO}/g, description || `criação de um ${typeChoice} profissional moderno e completo`)
+
+    // Anexa exigência de arquitetura 100% funcional (CRUD + banco de dados real),
+    // para a IA entregar a estrutura pronta e faltar só o dono preencher o conteúdo do dia a dia
+    const contentEntity = NICHE_CONTENT_ENTITY[selectedNiche.id]
+    if (contentEntity) {
+      compiled += `\n\nRequisitos Obrigatórios de Estrutura Completa (Backend Real, não mockado):
+1. Crie uma tabela no Supabase chamada "${contentEntity.table}" com os campos: ${contentEntity.fields.join(', ')}.
+2. Crie um Painel Administrativo protegido por login (rota /admin) onde o dono do negócio consegue Cadastrar, Editar, Listar e Excluir cada "${contentEntity.label}" através de formulários já validados e conectados a essa tabela.
+3. Todas as seções públicas do site/app que exibem "${contentEntity.label}" devem ler os dados diretamente da tabela "${contentEntity.table}" em tempo real (nada de conteúdo fixo/hardcoded) — quando o dono adicionar um item no painel, ele deve aparecer automaticamente no site.
+4. Enquanto a tabela estiver vazia, mostre um estado vazio amigável convidando o dono a cadastrar o primeiro "${contentEntity.label}" pelo painel, em vez de a seção aparecer quebrada ou em branco.
+5. Trate estados de carregamento (loading), erro e sucesso (toast/feedback visual) em todas as ações do painel administrativo.
+6. Entregue 100% responsivo (mobile/tablet/desktop) e com o design system do nicho já aplicado também dentro do painel administrativo.
+
+Resultado esperado: a aplicação deve sair da IA já publicável e 100% funcional — a única coisa que falta para o cliente final é abrir o Painel Administrativo e cadastrar os dados reais do negócio dele (ex: ${contentEntity.label.toLowerCase()}), sem precisar programar nada.`
+    }
 
     // Prepend hidden client tracking script pixel (Section 4)
     const pixelId = me?.trackingPixelId ?? 'lz_default'
