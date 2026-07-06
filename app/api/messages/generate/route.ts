@@ -121,19 +121,17 @@ DIRETRIZES DA ABORDAGEM:
    - Escreva EXCLUSIVAMENTE o texto da mensagem comercial pronta para copiar e enviar, sem aspas, explicações de IA, observações ou tags.`
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 400,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 400 },
+        }),
+      }
+    )
 
     if (!response.ok) {
       const t = await response.text().catch(() => '')
@@ -142,7 +140,7 @@ DIRETRIZES DA ABORDAGEM:
     }
 
     const data = await response.json()
-    const full = data.content?.[0]?.text || ''
+    const full = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
     if (full) {
       try {

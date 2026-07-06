@@ -72,19 +72,17 @@ INSTRUÇÕES OBRIGATÓRIAS:
 
 Gere apenas o texto da proposta/análise pronta.`
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 600 },
+        }),
+      }
+    )
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '')
@@ -93,7 +91,7 @@ Gere apenas o texto da proposta/análise pronta.`
     }
 
     const data = await response.json()
-    const analysis = data.content?.[0]?.text || 'Não foi possível gerar a análise deste lead.'
+    const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Não foi possível gerar a análise deste lead.'
 
     return NextResponse.json({ analysis })
   } catch (e) {
