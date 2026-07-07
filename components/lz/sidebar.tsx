@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import {
-  Radar, Search, MessageSquare, FileText, BarChart3, Trophy, Users, Settings, LogOut, Zap,
+  Radar, Search, MessageSquare, FileText, BarChart3, Trophy, Users, Settings, LogOut, Zap, BookOpen,
 } from 'lucide-react'
 
 const NAV = [
@@ -13,6 +13,7 @@ const NAV = [
   { href: '/prospectar', label: 'Prospectar', icon: Search },
   { href: '/mensagens', label: 'Mensagens', icon: MessageSquare },
   { href: '/prompts', label: 'Gerador de Prompts', icon: FileText },
+  { href: '/central-publicacao', label: 'Central de Publicação', icon: BookOpen },
   { href: '/ranking', label: 'Ranking', icon: Trophy },
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
 ]
