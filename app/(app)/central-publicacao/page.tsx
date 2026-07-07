@@ -5,50 +5,53 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles, UserPlus, FileText, UploadCloud, CheckCircle, Palette, FileDown, Rocket,
   PlusCircle, PlayCircle, Database, GitBranch, Globe, Link as LinkIcon, MessageSquare,
-  Monitor, CheckSquare, Camera, Check, ChevronDown, AlertCircle, BookOpen, AppWindow,
+  Monitor, CheckSquare, Check, ChevronDown, AlertCircle, BookOpen, AppWindow,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/lz/ui'
+
+type MockupKind = 'form' | 'input' | 'chat' | 'dashboard' | 'deploy' | 'settings' | 'checklist'
 
 type Step = {
   id: string
   title: string
   desc: string
   icon: any
+  mockup: MockupKind
 }
 
 const ebookSteps: Step[] = [
-  { id: 'eb1', title: 'Gerar o prompt no SaaS', desc: 'Preencha tema, público-alvo, tom de voz e a estrutura desejada do ebook na aba "Gerador de Prompts" para obter um prompt pronto e detalhado.', icon: Sparkles },
-  { id: 'eb2', title: 'Criar conta no Gamma', desc: 'Acesse gamma.app e cadastre-se gratuitamente usando sua conta Google ou e-mail. O plano gratuito já é suficiente para começar.', icon: UserPlus },
-  { id: 'eb3', title: 'Criar novo documento', desc: 'Dentro do Gamma, clique em "Create new" (ou "+ Novo"), escolha a opção "Generate" e selecione o formato "Document".', icon: FileText },
-  { id: 'eb4', title: 'Colar o prompt', desc: 'Cole o prompt gerado no SaaS dentro da caixa de texto do Gamma e clique em "Generate outline" para a IA montar a estrutura de capítulos.', icon: UploadCloud },
-  { id: 'eb5', title: 'Revisar o conteúdo', desc: 'Leia cada capítulo gerado e ajuste textos, exemplos e informações diretamente nos blocos de edição do Gamma.', icon: CheckCircle },
-  { id: 'eb6', title: 'Personalizar o design', desc: 'Escolha um tema visual que combine com o assunto do ebook, ajuste as cores e adicione uma capa de destaque.', icon: Palette },
-  { id: 'eb7', title: 'Exportar em PDF', desc: 'Clique em "Share" no canto superior direito, selecione "Export" e escolha o formato "PDF" para baixar o arquivo final.', icon: FileDown },
-  { id: 'eb8', title: 'Entregar ou vender', desc: 'Envie o PDF por e-mail, disponibilize no Google Drive, ou cadastre o produto na Hotmart/Kiwify/Gumroad para vender automaticamente.', icon: Rocket },
+  { id: 'eb1', title: 'Gerar o prompt no SaaS', desc: 'Preencha tema, público-alvo, tom de voz e a estrutura desejada do ebook na aba "Gerador de Prompts" para obter um prompt pronto e detalhado.', icon: Sparkles, mockup: 'input' },
+  { id: 'eb2', title: 'Criar conta no Gamma', desc: 'Acesse gamma.app e cadastre-se gratuitamente usando sua conta Google ou e-mail. O plano gratuito já é suficiente para começar.', icon: UserPlus, mockup: 'form' },
+  { id: 'eb3', title: 'Criar novo documento', desc: 'Dentro do Gamma, clique em "Create new" (ou "+ Novo"), escolha a opção "Generate" e selecione o formato "Document".', icon: FileText, mockup: 'dashboard' },
+  { id: 'eb4', title: 'Colar o prompt', desc: 'Cole o prompt gerado no SaaS dentro da caixa de texto do Gamma e clique em "Generate outline" para a IA montar a estrutura de capítulos.', icon: UploadCloud, mockup: 'input' },
+  { id: 'eb5', title: 'Revisar o conteúdo', desc: 'Leia cada capítulo gerado e ajuste textos, exemplos e informações diretamente nos blocos de edição do Gamma.', icon: CheckCircle, mockup: 'chat' },
+  { id: 'eb6', title: 'Personalizar o design', desc: 'Escolha um tema visual que combine com o assunto do ebook, ajuste as cores e adicione uma capa de destaque.', icon: Palette, mockup: 'settings' },
+  { id: 'eb7', title: 'Exportar em PDF', desc: 'Clique em "Share" no canto superior direito, selecione "Export" e escolha o formato "PDF" para baixar o arquivo final.', icon: FileDown, mockup: 'deploy' },
+  { id: 'eb8', title: 'Entregar ou vender', desc: 'Envie o PDF por e-mail, disponibilize no Google Drive, ou cadastre o produto na Hotmart/Kiwify/Gumroad para vender automaticamente.', icon: Rocket, mockup: 'deploy' },
 ]
 
 const appSteps: Step[] = [
-  { id: 'ap1', title: 'Gerar o prompt no SaaS', desc: 'Descreva as funcionalidades principais, o público-alvo e o estilo visual desejado do aplicativo na aba "Gerador de Prompts".', icon: Sparkles },
-  { id: 'ap2', title: 'Criar conta no Lovable', desc: 'Acesse lovable.dev e cadastre-se — recomendado usar sua conta do GitHub para já facilitar a exportação do código depois.', icon: UserPlus },
-  { id: 'ap3', title: 'Criar o projeto', desc: 'Cole o prompt gerado na caixa principal do Lovable e clique em "Generate". Aguarde a IA montar a primeira versão do app.', icon: PlusCircle },
-  { id: 'ap4', title: 'Testar e ajustar', desc: 'Navegue pelo preview interativo e peça alterações diretamente pelo chat, como "mude a cor do botão" ou "adicione uma tela de login".', icon: PlayCircle },
-  { id: 'ap5', title: 'Conectar banco de dados', desc: 'Se o app precisa salvar dados (cadastros, pedidos, etc.), vá em "Integrations" e ative a conexão nativa com o Supabase.', icon: Database },
-  { id: 'ap6', title: 'Exportar para GitHub', desc: 'Conecte sua conta do GitHub dentro do Lovable e crie um novo repositório para armazenar o código do seu app.', icon: GitBranch },
-  { id: 'ap7', title: 'Publicar na Vercel', desc: 'Importe o repositório em vercel.com e clique em "Deploy". Em poucos minutos seu app já estará no ar com um link público.', icon: Rocket },
-  { id: 'ap8', title: 'Comprar domínio', desc: 'Compre o endereço ideal para o seu app no Registro.br (domínios .com.br) ou Namecheap/GoDaddy (domínios internacionais).', icon: Globe },
-  { id: 'ap9', title: 'Conectar domínio', desc: 'Em "Settings > Domains" na Vercel, adicione seu domínio próprio e configure os registros DNS indicados pelo painel.', icon: LinkIcon },
+  { id: 'ap1', title: 'Gerar o prompt no SaaS', desc: 'Descreva as funcionalidades principais, o público-alvo e o estilo visual desejado do aplicativo na aba "Gerador de Prompts".', icon: Sparkles, mockup: 'input' },
+  { id: 'ap2', title: 'Criar conta no Lovable', desc: 'Acesse lovable.dev e cadastre-se — recomendado usar sua conta do GitHub para já facilitar a exportação do código depois.', icon: UserPlus, mockup: 'form' },
+  { id: 'ap3', title: 'Criar o projeto', desc: 'Cole o prompt gerado na caixa principal do Lovable e clique em "Generate". Aguarde a IA montar a primeira versão do app.', icon: PlusCircle, mockup: 'input' },
+  { id: 'ap4', title: 'Testar e ajustar', desc: 'Navegue pelo preview interativo e peça alterações diretamente pelo chat, como "mude a cor do botão" ou "adicione uma tela de login".', icon: PlayCircle, mockup: 'chat' },
+  { id: 'ap5', title: 'Conectar banco de dados', desc: 'Se o app precisa salvar dados (cadastros, pedidos, etc.), vá em "Integrations" e ative a conexão nativa com o Supabase.', icon: Database, mockup: 'settings' },
+  { id: 'ap6', title: 'Exportar para GitHub', desc: 'Conecte sua conta do GitHub dentro do Lovable e crie um novo repositório para armazenar o código do seu app.', icon: GitBranch, mockup: 'settings' },
+  { id: 'ap7', title: 'Publicar na Vercel', desc: 'Importe o repositório em vercel.com e clique em "Deploy". Em poucos minutos seu app já estará no ar com um link público.', icon: Rocket, mockup: 'deploy' },
+  { id: 'ap8', title: 'Comprar domínio', desc: 'Compre o endereço ideal para o seu app no Registro.br (domínios .com.br) ou Namecheap/GoDaddy (domínios internacionais).', icon: Globe, mockup: 'form' },
+  { id: 'ap9', title: 'Conectar domínio', desc: 'Em "Settings > Domains" na Vercel, adicione seu domínio próprio e configure os registros DNS indicados pelo painel.', icon: LinkIcon, mockup: 'settings' },
 ]
 
 const siteSteps: Step[] = [
-  { id: 'st1', title: 'Gerar o prompt no SaaS', desc: 'Defina as seções desejadas (Hero, Serviços, Depoimentos, FAQ), o estilo visual e o CTA principal do site.', icon: Sparkles },
-  { id: 'st2', title: 'Criar o projeto no Lovable', desc: 'Cole o prompt gerado no Lovable e clique em "Generate" para a IA criar a estrutura completa do site.', icon: PlusCircle },
-  { id: 'st3', title: 'Revisar textos e imagens', desc: 'Leia todo o conteúdo gerado e peça ajustes de copy, títulos e imagens diretamente pelo chat da ferramenta.', icon: CheckCircle },
-  { id: 'st4', title: 'Adicionar integrações', desc: 'Solicite a inserção de um botão de WhatsApp flutuante, formulário de contato ou mapa de localização, se necessário.', icon: MessageSquare },
-  { id: 'st5', title: 'Testar responsividade', desc: 'Alterne entre as visualizações desktop e mobile no preview para garantir que o site fique perfeito em qualquer tela.', icon: Monitor },
-  { id: 'st6', title: 'Publicar no Netlify', desc: 'Conecte sua conta do GitHub ao Netlify, selecione o repositório do projeto e clique em "Deploy site".', icon: Rocket },
-  { id: 'st7', title: 'Comprar e conectar domínio', desc: 'Registre o domínio desejado e, no painel do Netlify em "Domain Settings", insira os registros DNS indicados.', icon: Globe },
-  { id: 'st8', title: 'Checklist final', desc: 'Confira se todos os links abrem corretamente, se o certificado SSL (cadeado) está ativo e se o site carrega rápido.', icon: CheckSquare },
+  { id: 'st1', title: 'Gerar o prompt no SaaS', desc: 'Defina as seções desejadas (Hero, Serviços, Depoimentos, FAQ), o estilo visual e o CTA principal do site.', icon: Sparkles, mockup: 'input' },
+  { id: 'st2', title: 'Criar o projeto no Lovable', desc: 'Cole o prompt gerado no Lovable e clique em "Generate" para a IA criar a estrutura completa do site.', icon: PlusCircle, mockup: 'input' },
+  { id: 'st3', title: 'Revisar textos e imagens', desc: 'Leia todo o conteúdo gerado e peça ajustes de copy, títulos e imagens diretamente pelo chat da ferramenta.', icon: CheckCircle, mockup: 'chat' },
+  { id: 'st4', title: 'Adicionar integrações', desc: 'Solicite a inserção de um botão de WhatsApp flutuante, formulário de contato ou mapa de localização, se necessário.', icon: MessageSquare, mockup: 'settings' },
+  { id: 'st5', title: 'Testar responsividade', desc: 'Alterne entre as visualizações desktop e mobile no preview para garantir que o site fique perfeito em qualquer tela.', icon: Monitor, mockup: 'dashboard' },
+  { id: 'st6', title: 'Publicar no Netlify', desc: 'Conecte sua conta do GitHub ao Netlify, selecione o repositório do projeto e clique em "Deploy site".', icon: Rocket, mockup: 'deploy' },
+  { id: 'st7', title: 'Comprar e conectar domínio', desc: 'Registre o domínio desejado e, no painel do Netlify em "Domain Settings", insira os registros DNS indicados.', icon: Globe, mockup: 'form' },
+  { id: 'st8', title: 'Checklist final', desc: 'Confira se todos os links abrem corretamente, se o certificado SSL (cadeado) está ativo e se o site carrega rápido.', icon: CheckSquare, mockup: 'checklist' },
 ]
 
 const TABS = [
@@ -78,6 +81,132 @@ const FAQS: Record<TabId, { q: string; a: string }[]> = {
 }
 
 const STORAGE_KEY = 'lz_central_publicacao_steps'
+
+// Bloco skeleton usado dentro dos mockups (simula uma linha de texto/UI)
+function Bar({ w = '100%', h = 'h-2', tone = 'bg-white/15' }: { w?: string; h?: string; tone?: string }) {
+  return <div className={`${h} rounded ${tone}`} style={{ width: w }} />
+}
+
+// "Miolo" da janela de navegador — varia por tipo de passo pra parecer telas diferentes
+function MockupScene({ kind }: { kind: MockupKind }) {
+  if (kind === 'form') {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="w-[70%] max-w-[220px] rounded-lg bg-black/30 border border-white/10 p-4 flex flex-col gap-3">
+          <div className="h-3 w-16 rounded bg-white/25 mx-auto mb-1" />
+          <Bar w="100%" h="h-6" tone="bg-white/10" />
+          <Bar w="100%" h="h-6" tone="bg-white/10" />
+          <div className="h-7 rounded-md bg-white/85 mt-1" />
+        </div>
+      </div>
+    )
+  }
+  if (kind === 'input') {
+    return (
+      <div className="h-full flex flex-col gap-2.5 p-1">
+        <Bar w="35%" tone="bg-white/25" />
+        <div className="flex-1 rounded-lg bg-black/30 border border-white/10 p-3 flex flex-col gap-2 justify-center">
+          <Bar w="88%" />
+          <Bar w="72%" />
+          <Bar w="60%" />
+        </div>
+        <div className="self-end h-6 w-20 rounded-md bg-white/85" />
+      </div>
+    )
+  }
+  if (kind === 'chat') {
+    return (
+      <div className="h-full flex gap-2">
+        <div className="w-[28%] rounded-lg bg-black/25 border border-white/10 p-2 flex flex-col gap-2">
+          <Bar w="90%" tone="bg-white/20" />
+          <Bar w="70%" tone="bg-white/10" />
+          <Bar w="80%" tone="bg-white/10" />
+        </div>
+        <div className="flex-1 flex flex-col gap-2 justify-end">
+          <div className="self-start max-w-[75%] rounded-lg rounded-bl-none bg-black/30 border border-white/10 p-2">
+            <Bar w="120px" tone="bg-white/20" />
+          </div>
+          <div className="self-end max-w-[75%] rounded-lg rounded-br-none bg-white/15 p-2">
+            <Bar w="90px" tone="bg-white/40" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+  if (kind === 'dashboard') {
+    return (
+      <div className="h-full grid grid-cols-2 gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-lg bg-black/25 border border-white/10 p-2.5 flex flex-col gap-1.5 justify-center">
+            <Bar w="60%" tone="bg-white/20" />
+            <Bar w="85%" tone="bg-white/10" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (kind === 'settings') {
+    return (
+      <div className="h-full flex flex-col gap-2.5 justify-center">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="flex items-center justify-between rounded-lg bg-black/25 border border-white/10 px-3 py-2.5">
+            <Bar w="45%" tone="bg-white/20" />
+            <div className={`h-4 w-8 rounded-full ${i === 1 ? 'bg-emerald-400/70' : 'bg-white/15'}`} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (kind === 'checklist') {
+    return (
+      <div className="h-full flex flex-col gap-2.5 justify-center">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-2.5 rounded-lg bg-black/20 px-2 py-1.5">
+            <div className="h-4 w-4 rounded bg-emerald-400/70 flex items-center justify-center shrink-0">
+              <Check size={11} strokeWidth={3} className="text-black" />
+            </div>
+            <Bar w={`${70 - i * 8}%`} tone="bg-white/15" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  // deploy
+  return (
+    <div className="h-full flex flex-col items-center justify-center gap-3">
+      <div className="h-12 w-12 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center">
+        <Check size={22} strokeWidth={3} className="text-emerald-300" />
+      </div>
+      <Bar w="120px" tone="bg-white/25" />
+      <Bar w="80px" tone="bg-white/10" />
+    </div>
+  )
+}
+
+// Moldura de janela de navegador — dá aparência de "print de tela" real
+function BrowserMockup({ url, gradient, kind }: { url: string; gradient: string; kind: MockupKind }) {
+  return (
+    <div className="rounded-xl overflow-hidden border border-white/10 aspect-video mt-2 flex flex-col bg-[#15151d]">
+      <div className="h-7 shrink-0 bg-[#1e1e29] flex items-center gap-2 px-3 border-b border-white/5">
+        <div className="flex gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
+        </div>
+        <div className="flex-1 h-4.5 rounded bg-black/30 flex items-center px-2.5 max-w-[220px]">
+          <span className="text-[9px] text-zinc-500 font-jet truncate">{url}</span>
+        </div>
+      </div>
+      <div className={`flex-1 p-3.5 bg-gradient-to-br ${gradient} bg-opacity-20 relative`} style={{ background: undefined }}>
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-25`} />
+        <div className="absolute inset-0 bg-[#0c0c12]/70" />
+        <div className="relative h-full">
+          <MockupScene kind={kind} />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function CentralPublicacaoPage() {
   const [activeTab, setActiveTab] = useState<TabId>('ebook')
@@ -217,26 +346,8 @@ export default function CentralPublicacaoPage() {
                 </label>
               </div>
 
-              {/* Ilustração do passo (16:9) — troque por um print real quando quiser */}
-              <div className={`relative rounded-xl overflow-hidden aspect-video mt-2 border border-white/10 bg-gradient-to-br ${tab.gradient} group/img`}>
-                <div className="absolute inset-0 bg-black/15" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,20,0.92)] to-transparent" />
-                <div className="absolute inset-0 opacity-[0.07] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:14px_14px]" />
-                <div className="absolute -right-3 -bottom-3 text-white/10">
-                  <StepIcon size={110} strokeWidth={1} />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="p-4 rounded-2xl bg-black/25 border border-white/10 backdrop-blur-sm">
-                    <StepIcon size={32} className="text-white/85" strokeWidth={1.5} />
-                  </div>
-                </div>
-                <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5">
-                  <Camera size={11} className="text-white/50" />
-                  <span className="text-[9px] uppercase font-bold text-white/50 tracking-wider">
-                    Substitua por um print real quando quiser
-                  </span>
-                </div>
-              </div>
+              {/* Mockup em formato de janela de navegador — simula um print de tela real. Troque por um print de verdade quando quiser. */}
+              <BrowserMockup url={tab.toolUrl.replace('https://', '')} gradient={tab.gradient} kind={step.mockup} />
             </motion.div>
           )
         })}
