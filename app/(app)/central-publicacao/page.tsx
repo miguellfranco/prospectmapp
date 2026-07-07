@@ -92,11 +92,11 @@ function Bar({ w = '100%', h = 'h-2.5', tone = 'bg-gray-300' }: { w?: string; h?
 function MockupScene({ kind }: { kind: MockupKind }) {
   if (kind === 'form') {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-[#eef0f5] p-4">
-        <div className="w-[75%] max-w-[240px] rounded-lg bg-white border border-gray-200 shadow-sm p-4 flex flex-col gap-2.5">
+      <div className="h-full w-full flex items-center justify-center bg-[#dbdee6] p-4">
+        <div className="w-[75%] max-w-[240px] rounded-lg bg-white border border-gray-300 shadow p-4 flex flex-col gap-2.5">
           <Bar w="50%" h="h-3" tone="bg-gray-700" />
-          <div className="h-7 rounded-md bg-gray-100 border border-gray-200 mt-1" />
-          <div className="h-7 rounded-md bg-gray-100 border border-gray-200" />
+          <div className="h-7 rounded-md bg-gray-100 border border-gray-300 mt-1" />
+          <div className="h-7 rounded-md bg-gray-100 border border-gray-300" />
           <div className="h-8 rounded-md bg-violet-600 mt-1.5" />
         </div>
       </div>
@@ -104,9 +104,9 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'input') {
     return (
-      <div className="h-full w-full flex flex-col gap-2.5 bg-[#eef0f5] p-4">
+      <div className="h-full w-full flex flex-col gap-2.5 bg-[#dbdee6] p-4">
         <Bar w="40%" h="h-3" tone="bg-gray-700" />
-        <div className="flex-1 rounded-lg bg-white border border-gray-200 shadow-sm p-3 flex flex-col gap-2 justify-center">
+        <div className="flex-1 rounded-lg bg-white border border-gray-300 shadow p-3 flex flex-col gap-2 justify-center">
           <Bar w="90%" tone="bg-gray-300" />
           <Bar w="75%" tone="bg-gray-300" />
           <Bar w="55%" tone="bg-gray-300" />
@@ -117,18 +117,20 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'chat') {
     return (
-      <div className="h-full w-full flex gap-2.5 bg-[#eef0f5] p-4">
-        <div className="w-[30%] rounded-lg bg-white border border-gray-200 shadow-sm p-2.5 flex flex-col gap-2">
+      <div className="h-full w-full flex gap-2.5 bg-[#dbdee6] p-4">
+        <div className="w-[30%] rounded-lg bg-white border border-gray-300 shadow p-2.5 flex flex-col gap-2">
           <Bar w="85%" tone="bg-gray-500" />
-          <Bar w="65%" tone="bg-gray-200" />
-          <Bar w="75%" tone="bg-gray-200" />
+          <Bar w="65%" tone="bg-gray-300" />
+          <Bar w="75%" tone="bg-gray-300" />
         </div>
-        <div className="flex-1 flex flex-col gap-2 justify-end">
-          <div className="self-start max-w-[80%] rounded-lg rounded-bl-sm bg-white border border-gray-200 shadow-sm px-3 py-2">
-            <Bar w="90px" tone="bg-gray-400" />
+        <div className="flex-1 flex flex-col gap-2.5 justify-end">
+          <div className="self-start max-w-[80%] rounded-lg rounded-bl-sm bg-gray-100 border border-gray-300 shadow px-3 py-2.5 flex flex-col gap-1.5">
+            <Bar w="95px" tone="bg-gray-400" />
+            <Bar w="60px" tone="bg-gray-400" />
           </div>
-          <div className="self-end max-w-[80%] rounded-lg rounded-br-sm bg-violet-600 px-3 py-2">
-            <Bar w="70px" tone="bg-white" />
+          <div className="self-end max-w-[80%] rounded-lg rounded-br-sm bg-violet-600 shadow px-3 py-2.5 flex flex-col gap-1.5">
+            <Bar w="75px" tone="bg-white" />
+            <Bar w="45px" tone="bg-white" />
           </div>
         </div>
       </div>
@@ -136,9 +138,9 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'dashboard') {
     return (
-      <div className="h-full w-full grid grid-cols-2 gap-2.5 bg-[#eef0f5] p-4">
+      <div className="h-full w-full grid grid-cols-2 gap-2.5 bg-[#dbdee6] p-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="rounded-lg bg-white border border-gray-200 shadow-sm p-3 flex flex-col gap-2 justify-center">
+          <div key={i} className="rounded-lg bg-white border border-gray-300 shadow p-3 flex flex-col gap-2 justify-center">
             <Bar w="55%" h="h-3" tone="bg-gray-600" />
             <Bar w="80%" tone="bg-gray-200" />
           </div>
@@ -148,9 +150,9 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'settings') {
     return (
-      <div className="h-full w-full flex flex-col gap-2.5 justify-center bg-[#eef0f5] p-4">
+      <div className="h-full w-full flex flex-col gap-2.5 justify-center bg-[#dbdee6] p-4">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-center justify-between rounded-lg bg-white border border-gray-200 shadow-sm px-3.5 py-3">
+          <div key={i} className="flex items-center justify-between rounded-lg bg-white border border-gray-300 shadow px-3.5 py-3">
             <Bar w="45%" tone="bg-gray-500" />
             <div className={`h-5 w-9 rounded-full flex items-center px-0.5 ${i === 1 ? 'bg-emerald-500 justify-end' : 'bg-gray-300 justify-start'}`}>
               <div className="h-4 w-4 rounded-full bg-white shadow" />
@@ -162,9 +164,9 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'checklist') {
     return (
-      <div className="h-full w-full flex flex-col gap-2.5 justify-center bg-[#eef0f5] p-4">
+      <div className="h-full w-full flex flex-col gap-2.5 justify-center bg-[#dbdee6] p-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-2.5 rounded-lg bg-white border border-gray-200 shadow-sm px-3 py-2">
+          <div key={i} className="flex items-center gap-2.5 rounded-lg bg-white border border-gray-300 shadow px-3 py-2">
             <div className="h-5 w-5 rounded bg-emerald-500 flex items-center justify-center shrink-0">
               <Check size={12} strokeWidth={3} className="text-white" />
             </div>
@@ -176,8 +178,8 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   // deploy
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-[#eef0f5] p-4">
-      <div className="h-14 w-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-sm">
+    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-[#dbdee6] p-4">
+      <div className="h-14 w-14 rounded-full bg-emerald-500 flex items-center justify-center shadow">
         <Check size={26} strokeWidth={3} className="text-white" />
       </div>
       <Bar w="130px" h="h-3" tone="bg-gray-600" />
