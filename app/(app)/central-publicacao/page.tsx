@@ -82,52 +82,53 @@ const FAQS: Record<TabId, { q: string; a: string }[]> = {
 
 const STORAGE_KEY = 'lz_central_publicacao_steps'
 
-// Bloco skeleton usado dentro dos mockups (simula uma linha de texto/UI)
-function Bar({ w = '100%', h = 'h-2', tone = 'bg-white/15' }: { w?: string; h?: string; tone?: string }) {
-  return <div className={`${h} rounded ${tone}`} style={{ width: w }} />
+// Barra sólida usada dentro dos mockups (simula uma linha de texto/UI) — cor sempre opaca, nunca translúcida
+function Bar({ w = '100%', h = 'h-2.5', tone = 'bg-gray-300' }: { w?: string; h?: string; tone?: string }) {
+  return <div className={`${h} rounded-full ${tone} shrink-0`} style={{ width: w }} />
 }
 
-// "Miolo" da janela de navegador — varia por tipo de passo pra parecer telas diferentes
+// "Miolo" da janela de navegador — varia por tipo de passo. Fundo claro sólido (não gradiente translúcido)
+// pra parecer de fato uma tela de aplicativo, com boa leitura em qualquer contraste.
 function MockupScene({ kind }: { kind: MockupKind }) {
   if (kind === 'form') {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="w-[70%] max-w-[220px] rounded-lg bg-black/30 border border-white/10 p-4 flex flex-col gap-3">
-          <div className="h-3 w-16 rounded bg-white/25 mx-auto mb-1" />
-          <Bar w="100%" h="h-6" tone="bg-white/10" />
-          <Bar w="100%" h="h-6" tone="bg-white/10" />
-          <div className="h-7 rounded-md bg-white/85 mt-1" />
+      <div className="h-full w-full flex items-center justify-center bg-[#eef0f5] p-4">
+        <div className="w-[75%] max-w-[240px] rounded-lg bg-white border border-gray-200 shadow-sm p-4 flex flex-col gap-2.5">
+          <Bar w="50%" h="h-3" tone="bg-gray-700" />
+          <div className="h-7 rounded-md bg-gray-100 border border-gray-200 mt-1" />
+          <div className="h-7 rounded-md bg-gray-100 border border-gray-200" />
+          <div className="h-8 rounded-md bg-violet-600 mt-1.5" />
         </div>
       </div>
     )
   }
   if (kind === 'input') {
     return (
-      <div className="h-full flex flex-col gap-2.5 p-1">
-        <Bar w="35%" tone="bg-white/25" />
-        <div className="flex-1 rounded-lg bg-black/30 border border-white/10 p-3 flex flex-col gap-2 justify-center">
-          <Bar w="88%" />
-          <Bar w="72%" />
-          <Bar w="60%" />
+      <div className="h-full w-full flex flex-col gap-2.5 bg-[#eef0f5] p-4">
+        <Bar w="40%" h="h-3" tone="bg-gray-700" />
+        <div className="flex-1 rounded-lg bg-white border border-gray-200 shadow-sm p-3 flex flex-col gap-2 justify-center">
+          <Bar w="90%" tone="bg-gray-300" />
+          <Bar w="75%" tone="bg-gray-300" />
+          <Bar w="55%" tone="bg-gray-300" />
         </div>
-        <div className="self-end h-6 w-20 rounded-md bg-white/85" />
+        <div className="self-end h-8 w-24 rounded-md bg-violet-600" />
       </div>
     )
   }
   if (kind === 'chat') {
     return (
-      <div className="h-full flex gap-2">
-        <div className="w-[28%] rounded-lg bg-black/25 border border-white/10 p-2 flex flex-col gap-2">
-          <Bar w="90%" tone="bg-white/20" />
-          <Bar w="70%" tone="bg-white/10" />
-          <Bar w="80%" tone="bg-white/10" />
+      <div className="h-full w-full flex gap-2.5 bg-[#eef0f5] p-4">
+        <div className="w-[30%] rounded-lg bg-white border border-gray-200 shadow-sm p-2.5 flex flex-col gap-2">
+          <Bar w="85%" tone="bg-gray-500" />
+          <Bar w="65%" tone="bg-gray-200" />
+          <Bar w="75%" tone="bg-gray-200" />
         </div>
         <div className="flex-1 flex flex-col gap-2 justify-end">
-          <div className="self-start max-w-[75%] rounded-lg rounded-bl-none bg-black/30 border border-white/10 p-2">
-            <Bar w="120px" tone="bg-white/20" />
+          <div className="self-start max-w-[80%] rounded-lg rounded-bl-sm bg-white border border-gray-200 shadow-sm px-3 py-2">
+            <Bar w="90px" tone="bg-gray-400" />
           </div>
-          <div className="self-end max-w-[75%] rounded-lg rounded-br-none bg-white/15 p-2">
-            <Bar w="90px" tone="bg-white/40" />
+          <div className="self-end max-w-[80%] rounded-lg rounded-br-sm bg-violet-600 px-3 py-2">
+            <Bar w="70px" tone="bg-white" />
           </div>
         </div>
       </div>
@@ -135,11 +136,11 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'dashboard') {
     return (
-      <div className="h-full grid grid-cols-2 gap-2">
+      <div className="h-full w-full grid grid-cols-2 gap-2.5 bg-[#eef0f5] p-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="rounded-lg bg-black/25 border border-white/10 p-2.5 flex flex-col gap-1.5 justify-center">
-            <Bar w="60%" tone="bg-white/20" />
-            <Bar w="85%" tone="bg-white/10" />
+          <div key={i} className="rounded-lg bg-white border border-gray-200 shadow-sm p-3 flex flex-col gap-2 justify-center">
+            <Bar w="55%" h="h-3" tone="bg-gray-600" />
+            <Bar w="80%" tone="bg-gray-200" />
           </div>
         ))}
       </div>
@@ -147,11 +148,13 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'settings') {
     return (
-      <div className="h-full flex flex-col gap-2.5 justify-center">
+      <div className="h-full w-full flex flex-col gap-2.5 justify-center bg-[#eef0f5] p-4">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex items-center justify-between rounded-lg bg-black/25 border border-white/10 px-3 py-2.5">
-            <Bar w="45%" tone="bg-white/20" />
-            <div className={`h-4 w-8 rounded-full ${i === 1 ? 'bg-emerald-400/70' : 'bg-white/15'}`} />
+          <div key={i} className="flex items-center justify-between rounded-lg bg-white border border-gray-200 shadow-sm px-3.5 py-3">
+            <Bar w="45%" tone="bg-gray-500" />
+            <div className={`h-5 w-9 rounded-full flex items-center px-0.5 ${i === 1 ? 'bg-emerald-500 justify-end' : 'bg-gray-300 justify-start'}`}>
+              <div className="h-4 w-4 rounded-full bg-white shadow" />
+            </div>
           </div>
         ))}
       </div>
@@ -159,13 +162,13 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   if (kind === 'checklist') {
     return (
-      <div className="h-full flex flex-col gap-2.5 justify-center">
+      <div className="h-full w-full flex flex-col gap-2.5 justify-center bg-[#eef0f5] p-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-2.5 rounded-lg bg-black/20 px-2 py-1.5">
-            <div className="h-4 w-4 rounded bg-emerald-400/70 flex items-center justify-center shrink-0">
-              <Check size={11} strokeWidth={3} className="text-black" />
+          <div key={i} className="flex items-center gap-2.5 rounded-lg bg-white border border-gray-200 shadow-sm px-3 py-2">
+            <div className="h-5 w-5 rounded bg-emerald-500 flex items-center justify-center shrink-0">
+              <Check size={12} strokeWidth={3} className="text-white" />
             </div>
-            <Bar w={`${70 - i * 8}%`} tone="bg-white/15" />
+            <Bar w={`${70 - i * 8}%`} tone="bg-gray-300" />
           </div>
         ))}
       </div>
@@ -173,36 +176,33 @@ function MockupScene({ kind }: { kind: MockupKind }) {
   }
   // deploy
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-3">
-      <div className="h-12 w-12 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center">
-        <Check size={22} strokeWidth={3} className="text-emerald-300" />
+    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-[#eef0f5] p-4">
+      <div className="h-14 w-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-sm">
+        <Check size={26} strokeWidth={3} className="text-white" />
       </div>
-      <Bar w="120px" tone="bg-white/25" />
-      <Bar w="80px" tone="bg-white/10" />
+      <Bar w="130px" h="h-3" tone="bg-gray-600" />
+      <Bar w="90px" tone="bg-gray-300" />
     </div>
   )
 }
 
-// Moldura de janela de navegador — dá aparência de "print de tela" real
-function BrowserMockup({ url, gradient, kind }: { url: string; gradient: string; kind: MockupKind }) {
+// Moldura de janela de navegador — dá aparência de "print de tela" real.
+// Altura fixa (não aspect-ratio+flex) pra garantir que o conteúdo interno sempre apareça certinho.
+function BrowserMockup({ url, kind }: { url: string; kind: MockupKind }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-white/10 aspect-video mt-2 flex flex-col bg-[#15151d]">
-      <div className="h-7 shrink-0 bg-[#1e1e29] flex items-center gap-2 px-3 border-b border-white/5">
+    <div className="rounded-xl overflow-hidden border border-white/10 mt-3 bg-[#1c1c26] shadow-lg">
+      <div className="h-8 flex items-center gap-2 px-3 bg-[#26262f] border-b border-white/10">
         <div className="flex gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
-          <div className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
         </div>
-        <div className="flex-1 h-4.5 rounded bg-black/30 flex items-center px-2.5 max-w-[220px]">
-          <span className="text-[9px] text-zinc-500 font-jet truncate">{url}</span>
+        <div className="flex-1 max-w-[220px] h-5 rounded-md bg-black/30 flex items-center px-2.5">
+          <span className="text-[10px] text-zinc-400 font-jet truncate">{url}</span>
         </div>
       </div>
-      <div className={`flex-1 p-3.5 bg-gradient-to-br ${gradient} bg-opacity-20 relative`} style={{ background: undefined }}>
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-25`} />
-        <div className="absolute inset-0 bg-[#0c0c12]/70" />
-        <div className="relative h-full">
-          <MockupScene kind={kind} />
-        </div>
+      <div className="h-52 sm:h-56">
+        <MockupScene kind={kind} />
       </div>
     </div>
   )
@@ -347,7 +347,7 @@ export default function CentralPublicacaoPage() {
               </div>
 
               {/* Mockup em formato de janela de navegador — simula um print de tela real. Troque por um print de verdade quando quiser. */}
-              <BrowserMockup url={tab.toolUrl.replace('https://', '')} gradient={tab.gradient} kind={step.mockup} />
+              <BrowserMockup url={tab.toolUrl.replace('https://', '')} kind={step.mockup} />
             </motion.div>
           )
         })}
