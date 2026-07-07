@@ -52,9 +52,9 @@ const siteSteps: Step[] = [
 ]
 
 const TABS = [
-  { id: 'ebook', label: 'Ebook', emoji: '📘', tool: 'Gamma', toolUrl: 'https://gamma.app', steps: ebookSteps },
-  { id: 'app', label: 'App', emoji: '📱', tool: 'Lovable', toolUrl: 'https://lovable.dev', steps: appSteps },
-  { id: 'site', label: 'Site', emoji: '🌐', tool: 'Lovable', toolUrl: 'https://lovable.dev', steps: siteSteps },
+  { id: 'ebook', label: 'Ebook', emoji: '📘', tool: 'Gamma', toolUrl: 'https://gamma.app', steps: ebookSteps, gradient: 'from-amber-600 to-orange-950' },
+  { id: 'app', label: 'App', emoji: '📱', tool: 'Lovable', toolUrl: 'https://lovable.dev', steps: appSteps, gradient: 'from-violet-600 to-fuchsia-950' },
+  { id: 'site', label: 'Site', emoji: '🌐', tool: 'Lovable', toolUrl: 'https://lovable.dev', steps: siteSteps, gradient: 'from-blue-600 to-cyan-950' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -217,12 +217,25 @@ export default function CentralPublicacaoPage() {
                 </label>
               </div>
 
-              {/* Placeholder de print de tela (16:9) */}
-              <div className="rounded-xl border border-dashed border-white/10 bg-[#030307] aspect-video flex flex-col items-center justify-center text-center p-4 mt-2">
-                <Camera size={24} className="text-zinc-700 mb-1" />
-                <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider">
-                  [Adicionar print de tela deste passo]
-                </span>
+              {/* Ilustração do passo (16:9) — troque por um print real quando quiser */}
+              <div className={`relative rounded-xl overflow-hidden aspect-video mt-2 border border-white/10 bg-gradient-to-br ${tab.gradient} group/img`}>
+                <div className="absolute inset-0 bg-black/15" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,20,0.92)] to-transparent" />
+                <div className="absolute inset-0 opacity-[0.07] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:14px_14px]" />
+                <div className="absolute -right-3 -bottom-3 text-white/10">
+                  <StepIcon size={110} strokeWidth={1} />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="p-4 rounded-2xl bg-black/25 border border-white/10 backdrop-blur-sm">
+                    <StepIcon size={32} className="text-white/85" strokeWidth={1.5} />
+                  </div>
+                </div>
+                <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5">
+                  <Camera size={11} className="text-white/50" />
+                  <span className="text-[9px] uppercase font-bold text-white/50 tracking-wider">
+                    Substitua por um print real quando quiser
+                  </span>
+                </div>
               </div>
             </motion.div>
           )
