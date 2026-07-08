@@ -176,9 +176,15 @@ export async function GET(req: NextRequest) {
     const filteredSalesCount = filteredSales.length
 
     // Generate daily chart points
+    // Usa apenas a data (sem hora) pra calcular a diferença de dias — caso contrário,
+    // como endDate normalmente é "agora" (com hora), o cálculo em milissegundos soma um
+    // dia a mais do que devia (ex: filtro "7 dias" mostrando 8 colunas no gráfico).
     const dailyMap = new Map<string, { date: string; revenue: number; count: number }>()
-    const timeDiff = Math.abs(endDate.getTime() - startDate.getTime())
-    const diffDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+    const startDayOnly = new Date(startDate)
+    startDayOnly.setHours(0, 0, 0, 0)
+    const endDayOnly = new Date(endDate)
+    endDayOnly.setHours(0, 0, 0, 0)
+    const diffDays = Math.round(Math.abs(endDayOnly.getTime() - startDayOnly.getTime()) / (1000 * 60 * 60 * 24))
 
     for (let i = diffDays; i >= 0; i--) {
       const d = new Date(endDate)
