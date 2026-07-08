@@ -286,7 +286,11 @@ export default function ProspectarPage() {
       }
       setResults(data?.leads ?? [])
       setTotalResults(data?.totalResults ?? 0)
-      toast.success(`${data?.leads?.length ?? 0} de ${data?.totalResults ?? 0} empresas encontradas!`)
+      if (!data?.leads?.length) {
+        toast.error('Nenhuma empresa real encontrada para esse nicho/cidade no momento. Tente outra cidade ou nicho.')
+      } else {
+        toast.success(`${data.leads.length} de ${data?.totalResults ?? data.leads.length} empresas encontradas!`)
+      }
     } catch { 
       toast.error('Erro ao prospectar.') 
     } finally { 
@@ -310,7 +314,11 @@ export default function ProspectarPage() {
       if (res.ok && data?.leads) {
         setResults((prev) => [...prev, ...data.leads])
         setPage(nextPage)
-        toast.success(`Mais ${data.leads.length} empresas carregadas!`)
+        if (data.leads.length > 0) {
+          toast.success(`Mais ${data.leads.length} empresas carregadas!`)
+        } else {
+          toast('Não há mais empresas reais para esse nicho/cidade no momento.')
+        }
       } else {
         toast.error('Erro ao carregar mais empresas.')
       }
@@ -644,7 +652,7 @@ export default function ProspectarPage() {
             <div className="text-xs p-3 rounded-lg border border-[var(--border-default)] flex gap-2 items-center" style={{ background: 'var(--bg-primary)' }}>
               <span className="text-base">💡</span>
               <p style={{ color: 'var(--text-secondary)' }}>
-                <strong>Dica:</strong> Seja específico no nicho para resultados mais precisos (ex: "muay thai" ou "suplementos" ao invés de "academia").
+                <strong>Dica:</strong> Seja específico no nicho para resultados mais precisos (ex: &ldquo;muay thai&rdquo; ou &ldquo;suplementos&rdquo; ao invés de &ldquo;academia&rdquo;).
               </p>
             </div>
           </form>

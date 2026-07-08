@@ -12,31 +12,6 @@ export async function GET() {
     let ranking = []
 
     try {
-      // Simula vendas ativas de outros usuários com 15% de chance para criar flutuações de ranking
-      if (Math.random() < 0.15) {
-        const otherUsers = await prisma.user.findMany({
-          where: { NOT: { id: user.id } },
-          take: 10
-        })
-        if (otherUsers.length > 0) {
-          const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)]
-          const niches = ['academia', 'barbearia', 'restaurante', 'salao', 'clinica', 'pizzaria', 'petshop', 'estetica', 'oficina', 'advocacia', 'hamburgueria']
-          const value = Math.floor(200 + Math.random() * 800)
-          const clientNames = ["Guilherme Silva", "Ana Souza", "Bruno Alves", "Juliana Santos", "Rodrigo Pereira"]
-          const clientName = clientNames[Math.floor(Math.random() * clientNames.length)]
-          
-          await prisma.sale.create({
-            data: {
-              userId: randomUser.id,
-              niche: niches[Math.floor(Math.random() * niches.length)],
-              saleValue: value,
-              clientName,
-              city: 'São Paulo, SP'
-            }
-          })
-        }
-      }
-
       const startOfMonth = new Date()
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)

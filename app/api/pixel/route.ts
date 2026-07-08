@@ -57,21 +57,13 @@ export async function GET(req: NextRequest) {
           })
         }
 
-        // Check if optional sale registration is requested via &value=...
-        const valueParam = searchParams.get('value')
-        if (valueParam) {
-          const saleValue = parseFloat(valueParam) || 500
-          await prisma.sale.create({
-            data: {
-              userId: user.id,
-              niche: searchParams.get('niche') || 'pixel',
-              saleValue,
-              clientName: searchParams.get('clientName') || 'Cliente Pixel',
-              city: searchParams.get('city') || 'São Paulo, SP',
-              description: `Venda via Pixel de Conversão em ${domainName}`
-            }
-          })
-        }
+        // NOTE: sale/revenue registration was intentionally removed from this endpoint.
+        // It's a public, unauthenticated GET request (embedded as a static <img> tag on
+        // third-party sites), so anyone who knows a user's trackingPixelId — which is
+        // shown to every logged-in user in the Prompts page UI — could previously call
+        // this URL directly with an arbitrary &value= to fabricate Sale records for
+        // themselves or any other user, inflating the ranking and affiliate commissions.
+        // Real sales must be logged through the authenticated POST /api/sales endpoint.
       }
     } catch (dbError) {
       console.warn('Database offline during pixel tracking, returning tracker directly')
