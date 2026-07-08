@@ -64,48 +64,68 @@ export async function GET(req: NextRequest) {
     let totalMessages = 0
     let recentLeads: any[] = []
     let recentSalesList: any[] = []
+    let topSellers: any[] = []
+    let filteredSales: any[] = []
+    let allSalesCount = 0
+    let allSalesRevenue = 0
 
-    try {
-      const [lT, tM, rL, rS] = await Promise.all([
+    // As três consultas a seguir são independentes entre si — rodam em paralelo
+    // em vez de uma esperar a outra terminar, o que reduz bastante o tempo de carregamento.
+    const [countersResult, topSellersResult, filteredSalesResult] = await Promise.allSettled([
+      Promise.all([
         prisma.lead.count({ where: { userId: user.id, viewed: true, updatedAt: { gte: startOfToday } } }),
         prisma.message.count({ where: { userId: user.id } }),
         prisma.lead.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' }, take: 10 }),
         prisma.sale.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' }, take: 15 }),
-      ])
+      ]),
+      (async () => {
+        const groupedSales = await prisma.sale.groupBy({
+          by: ['userId'],
+          _count: { _all: true },
+          _sum: { saleValue: true },
+        })
+        const topUserIds = groupedSales.map((g) => g.userId)
+        const topUsersList = await prisma.user.findMany({ where: { id: { in: topUserIds } }, select: { id: true, name: true } })
+        const topUserNameMap = new Map(topUsersList.map((u) => [u.id, u.name]))
+        return groupedSales
+          .map((g) => ({
+            userId: g.userId,
+            name: topUserNameMap.get(g.userId) ?? 'Usuário',
+            sales: g._count?._all ?? 0,
+            revenue: g._sum?.saleValue ?? 0,
+          }))
+          .sort((a, b) => b.sales - a.sales || b.revenue - a.revenue)
+          .slice(0, 3)
+      })(),
+      Promise.all([
+        prisma.sale.findMany({
+          where: {
+            userId: user.id,
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.sale.count({ where: { userId: user.id } }),
+        prisma.sale.aggregate({ where: { userId: user.id }, _sum: { saleValue: true } }),
+      ]),
+    ])
+
+    if (countersResult.status === 'fulfilled') {
+      const [lT, tM, rL, rS] = countersResult.value
       leadsToday = lT
       totalMessages = tM
       recentLeads = rL
       recentSalesList = rS
-    } catch {
+    } else {
       console.warn('Database offline, using fallbacks for dashboard counters')
       const localLeads = getLocalLeads(user.id)
       recentLeads = localLeads.slice(0, 10)
       leadsToday = localLeads.filter((l: any) => l.viewed && new Date(l.updatedAt).getTime() >= startOfToday.getTime()).length
     }
 
-    // Top 3 Sellers
-    let topSellers: any[] = []
-    try {
-      const groupedSales = await prisma.sale.groupBy({
-        by: ['userId'],
-        _count: { _all: true },
-        _sum: { saleValue: true },
-      })
-
-      const topUserIds = groupedSales.map((g) => g.userId)
-      const topUsersList = await prisma.user.findMany({ where: { id: { in: topUserIds } }, select: { id: true, name: true } })
-      const topUserNameMap = new Map(topUsersList.map((u) => [u.id, u.name]))
-
-      topSellers = groupedSales
-        .map((g) => ({
-          userId: g.userId,
-          name: topUserNameMap.get(g.userId) ?? 'Usuário',
-          sales: g._count?._all ?? 0,
-          revenue: g._sum?.saleValue ?? 0,
-        }))
-        .sort((a, b) => b.sales - a.sales || b.revenue - a.revenue)
-        .slice(0, 3)
-    } catch {
+    if (topSellersResult.status === 'fulfilled') {
+      topSellers = topSellersResult.value
+    } else {
       topSellers = [
         { userId: '1', name: 'Fabricio Monteiro', sales: 127, revenue: 63500 },
         { userId: '2', name: 'Suporte Forja.ai', sales: 82, revenue: 41000 },
@@ -115,23 +135,12 @@ export async function GET(req: NextRequest) {
 
     const dailyLimit = user.plan === 'vitalicio' ? 50 : user.plan === 'mensal' ? 5 : 3
 
-    // Filter sales based on selected date range
-    let filteredSales: any[] = []
-    let allSalesCount = 0
-    let allSalesRevenue = 0
-
-    try {
-      filteredSales = await prisma.sale.findMany({
-        where: {
-          userId: user.id,
-          createdAt: { gte: startDate, lte: endDate },
-        },
-        orderBy: { createdAt: 'asc' },
-      })
-      allSalesCount = await prisma.sale.count({ where: { userId: user.id } })
-      const agg = await prisma.sale.aggregate({ where: { userId: user.id }, _sum: { saleValue: true } })
-      allSalesRevenue = agg._sum.saleValue ?? 0
-    } catch {
+    if (filteredSalesResult.status === 'fulfilled') {
+      const [fs2, count2, agg2] = filteredSalesResult.value
+      filteredSales = fs2
+      allSalesCount = count2
+      allSalesRevenue = agg2._sum.saleValue ?? 0
+    } else {
       allSalesCount = 42
       allSalesRevenue = 16899.98
       const nowMs = Date.now()
