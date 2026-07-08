@@ -1,47 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Radar, Search, MessageSquare, Calendar, ChevronDown, CheckCircle2, 
-  Star, Zap, BarChart3, Users, Clock, ShieldCheck, Flame, Laptop, BookOpen, Compass
+import {
+  Radar, Search, MessageSquare, ChevronDown, CheckCircle2,
+  Star, Zap, BarChart3, ShieldCheck, Flame, Laptop, BookOpen, Compass,
+  Menu, X as CloseIcon, CreditCard, Headset
 } from 'lucide-react'
 
 export default function ProspectMapLanding() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [activeUsers, setActiveUsers] = useState(493)
-  const [spotsLeft, setSpotsLeft] = useState(3)
-  const maxUsers = 500
-
-  // Simulate active users oscillating slightly to feel real-time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveUsers((prev) => {
-        const change = Math.floor(Math.random() * 3) - 1 // -1, 0, or 1
-        const next = prev + change
-        if (next > 498) return 498
-        if (next < 491) return 491
-        return next
-      })
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [])
-
-  // Simulate spots left count oscillating between 2 and 10
-  useEffect(() => {
-    setSpotsLeft(Math.floor(3 + Math.random() * 7)) // random 3-9 initially
-    const interval = setInterval(() => {
-      setSpotsLeft((prev) => {
-        const change = Math.random() > 0.5 ? 1 : -1
-        const next = prev + change
-        if (next > 10) return 9
-        if (next < 2) return 3
-        return next
-      })
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const steps = [
     {
@@ -112,8 +82,8 @@ export default function ProspectMapLanding() {
             </div>
             <span className="font-bold text-2xl text-white tracking-tight">ProspectMap</span>
           </div>
-          
-          {/* Menu do Centro (Dividido igual ao concorrente) */}
+
+          {/* Menu do Centro */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
             <Link href="#como-funciona" className="hover:text-white transition-colors">Como Funciona</Link>
             <Link href="#funcionalidades" className="hover:text-white transition-colors">Funcionalidades</Link>
@@ -121,7 +91,7 @@ export default function ProspectMapLanding() {
             <Link href="#faq" className="hover:text-white transition-colors">FAQ</Link>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
             <Link href="/login" className="text-sm font-semibold text-zinc-400 hover:text-white transition-colors">
               Entrar
             </Link>
@@ -129,7 +99,44 @@ export default function ProspectMapLanding() {
               Assinar Agora
             </Link>
           </div>
+
+          {/* Botão do menu mobile */}
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Abrir menu"
+          >
+            {menuOpen ? <CloseIcon size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {/* Painel do menu mobile */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="md:hidden overflow-hidden border-t border-white/5 bg-[#05050b]"
+            >
+              <nav className="flex flex-col px-6 py-4 gap-1 text-sm font-medium text-zinc-300">
+                <Link href="#como-funciona" onClick={() => setMenuOpen(false)} className="py-3 border-b border-white/5 hover:text-white transition-colors">Como Funciona</Link>
+                <Link href="#funcionalidades" onClick={() => setMenuOpen(false)} className="py-3 border-b border-white/5 hover:text-white transition-colors">Funcionalidades</Link>
+                <Link href="#planos" onClick={() => setMenuOpen(false)} className="py-3 border-b border-white/5 hover:text-white transition-colors">Planos</Link>
+                <Link href="#faq" onClick={() => setMenuOpen(false)} className="py-3 border-b border-white/5 hover:text-white transition-colors">FAQ</Link>
+                <Link href="/login" onClick={() => setMenuOpen(false)} className="py-3 hover:text-white transition-colors">Entrar</Link>
+                <Link
+                  href="#planos"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-2 inline-flex items-center justify-center px-5 py-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm transition-all"
+                >
+                  Assinar Agora
+                </Link>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <main className="pt-20">
@@ -231,7 +238,7 @@ export default function ProspectMapLanding() {
         </section>
 
         {/* WORKFLOW (ETAPAS) */}
-        <section id="como-funciona" className="py-28 border-y border-white/5 bg-[#070710] relative">
+        <section id="como-funciona" className="scroll-mt-20 py-28 border-y border-white/5 bg-[#070710] relative">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-16">
               <h2 className="text-sm font-semibold tracking-wider text-violet-400 uppercase mb-3">COMO FUNCIONA</h2>
@@ -261,7 +268,7 @@ export default function ProspectMapLanding() {
         </section>
 
         {/* FEATURES */}
-        <section id="funcionalidades" className="py-28 relative">
+        <section id="funcionalidades" className="scroll-mt-20 py-28 relative">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-20">
               <h2 className="text-4xl font-bold text-white tracking-tight">Estrutura Pronta para Vendas</h2>
@@ -286,10 +293,10 @@ export default function ProspectMapLanding() {
           </div>
         </section>
 
-        {/* STATS & SCARCITY BAR */}
+        {/* STATS & TRUST BAR */}
         <section className="py-24 bg-gradient-to-b from-[#080812] to-[#05050b] border-t border-white/5">
           <div className="max-w-5xl mx-auto px-6 text-center">
-            
+
             {/* Big Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
               {stats.map((s, i) => (
@@ -301,39 +308,19 @@ export default function ProspectMapLanding() {
               ))}
             </div>
 
-            {/* SCARCITY BAR */}
-            <div className="max-w-3xl mx-auto p-6 rounded-2xl border border-violet-500/20 bg-violet-950/10 relative overflow-hidden text-left mb-16">
-              <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
-              
-              <div className="flex justify-between items-end mb-3">
-                <div className="flex items-center gap-2 text-violet-400 font-semibold">
-                  <Users size={16} />
-                  <span>Usuários ativos</span>
-                </div>
-                <div className="font-mono font-bold text-white">
-                  {activeUsers} <span className="text-zinc-600 text-sm">/ {maxUsers}</span>
-                </div>
+            {/* TRUST BAR — garantias reais, sem contador fabricado */}
+            <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
+              <div className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] text-left">
+                <CreditCard size={20} className="text-violet-400 shrink-0" />
+                <span className="text-xs text-zinc-300">Sem fidelidade — cancele quando quiser</span>
               </div>
-
-              <div className="h-3 w-full bg-zinc-950 rounded-full overflow-hidden mb-4 border border-white/5">
-                <motion.div 
-                  className="h-full bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-full relative"
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${(activeUsers / maxUsers) * 100}%` }}
-                  transition={{ duration: 1.2 }}
-                >
-                  <div className="absolute inset-0 bg-white/10 animate-pulse" />
-                </motion.div>
+              <div className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] text-left">
+                <Zap size={20} className="text-violet-400 shrink-0" />
+                <span className="text-xs text-zinc-300">Acesso liberado na hora, após a assinatura</span>
               </div>
-
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
-                <p className="text-zinc-300">
-                  Restam apenas <strong className="text-white text-sm">{maxUsers - activeUsers} acessos</strong> disponíveis hoje.
-                </p>
-                <div className="flex items-center gap-2 text-zinc-500">
-                  <Clock size={12} className="animate-spin-slow" />
-                  Atualizado em tempo real
-                </div>
+              <div className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] text-left">
+                <Headset size={20} className="text-violet-400 shrink-0" />
+                <span className="text-xs text-zinc-300">Suporte direto pelo WhatsApp</span>
               </div>
             </div>
 
@@ -344,7 +331,7 @@ export default function ProspectMapLanding() {
         </section>
 
         {/* PRICING SECTION */}
-        <section id="planos" className="py-32 relative">
+        <section id="planos" className="scroll-mt-20 py-32 relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-violet-900/5 blur-[150px] pointer-events-none rounded-full" />
           
           <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -498,10 +485,10 @@ export default function ProspectMapLanding() {
 
             </div>
 
-            {/* Dynamic spots warning (below values) */}
+            {/* Reforço de garantia (sem contador fabricado) */}
             <div className="mt-12 text-center">
-              <p className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-rose-500/20 bg-rose-950/20 text-rose-400 font-bold text-xs uppercase tracking-wider animate-pulse">
-                🔥 CORRA! Restam apenas {spotsLeft} vagas disponíveis com este valor promocional hoje.
+              <p className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-violet-500/20 bg-violet-950/10 text-violet-300 font-semibold text-xs uppercase tracking-wider">
+                <ShieldCheck size={14} /> Pagamento seguro · Sem taxas escondidas · Cancele quando quiser
               </p>
             </div>
 
@@ -509,7 +496,7 @@ export default function ProspectMapLanding() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="py-24 border-t border-white/5 bg-[#05050b]">
+        <section id="faq" className="scroll-mt-20 py-24 border-t border-white/5 bg-[#05050b]">
           <div className="max-w-3xl mx-auto px-6">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold text-white">Perguntas Frequentes</h2>
