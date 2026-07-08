@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { prisma } from '@/lib/db'
+import { isRateLimited } from '@/lib/rate-limit'
 import fs from 'fs'
 import path from 'path'
 
@@ -22,6 +23,10 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+    if (isRateLimited(`lead-analyze:${user.id}`, 20, 60_000)) {
+      return NextResponse.json({ error: 'Muitas análises em pouco tempo. Aguarde um instante e tente novamente.' }, { status: 429 })
+    }
 
     const body = await req.json().catch(() => ({}))
     const leadId = body?.leadId as string | undefined

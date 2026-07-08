@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { prisma } from '@/lib/db'
+import { isRateLimited } from '@/lib/rate-limit'
 import fs from 'fs'
 import path from 'path'
 
@@ -36,6 +37,10 @@ function updateLocalLeadStatus(leadId: string, status: string, viewed?: boolean)
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return new Response(JSON.stringify({ error: 'Não autenticado' }), { status: 401 })
+
+  if (isRateLimited(`msg-gen:${user.id}`, 20, 60_000)) {
+    return new Response(JSON.stringify({ error: 'Muitas gerações em pouco tempo. Aguarde um instante e tente novamente.' }), { status: 429 })
+  }
 
   const body = await req.json().catch(() => ({}))
   const leadId = body?.leadId as string | undefined
@@ -91,6 +96,15 @@ export async function POST(req: NextRequest) {
     serviceInstruction = "Foque em oferecer a CRIAÇÃO DE UM SITE PROFISSIONAL OU LANDING PAGE. Diga que percebeu que eles não possuem um site otimizado ou profissional para receber clientes e que ter uma página de alta conversão traria muito mais credibilidade e faturamento direto para o negócio deles."
   }
 
+  const variantInstructions: Record<number, string> = {
+    1: 'Pergunta direta baseada em uma observação sincera de melhoria no nicho deles.',
+    2: 'Elogio sincero ao trabalho deles no Maps/Redes, seguido de um gancho rápido de otimização comercial.',
+    3: 'Abordagem focada em trazer mais clientes locais da concorrência direta na região deles.',
+    4: 'Curiosidade rápida, propondo mostrar um detalhe rápido/auditoria grátis que você fez da empresa deles.',
+    5: 'Foco em conversão direta de clientes perdidos por falta de otimização/canal digital na cidade deles.',
+  }
+  const chosenVariant = variantInstructions[variant] ? variant : 1
+
   const prompt = `Você é um Copywriter de elite e especialista em prospecção fria via WhatsApp para pequenos negócios locais no Brasil.
 Seu objetivo é escrever uma mensagem de abertura comercial altamente persuasiva, natural, amigável e extremamente humanizada (que pareça digitada por uma pessoa no celular, não por robô) e impossível de ser ignorada.
 
@@ -104,12 +118,7 @@ DADOS DO ESTABELECIMENTO:
 DIRETRIZES DA ABORDAGEM:
 1. ${toneInstruction}
 2. ${serviceInstruction}
-3. VARIAÇÃO DE COPY (Variação ${variant} de 5): 
-   - Variação 1: Pergunta direta baseada em uma observação sincera de melhoria no nicho deles.
-   - Variação 2: Elogio sincero ao trabalho deles no Maps/Redes, seguido de um gancho rápido de otimização comercial.
-   - Variação 3: Abordagem focada em trazer mais clientes locais da concorrência direta na região deles.
-   - Variação 4: Curiosidade rápida, propondo mostrar um detalhe rápido/auditoria grátis que você fez da empresa deles.
-   - Variação 5: Foco em conversão direta de clientes perdidos por falta de otimização/canal digital na cidade deles.
+3. ESTILO DA ABORDAGEM: ${variantInstructions[chosenVariant]}
 4. FORMATAÇÃO WHATSAPP:
    - Use formatação do WhatsApp como *negrito* estrategicamente em 1 ou 2 palavras-chave importantes (ex: *site próprio*, *posicionamento*, *novos clientes*, *Google Maps*).
    - Use parágrafos curtos ou espaçamento se necessário, mas mantenha a mensagem compacta (máximo 4 frases).
