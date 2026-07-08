@@ -510,11 +510,13 @@ export default function PromptsPage() {
     // page de vendas) não servem — sem isso, a IA ignora a escolha de "app" e gera uma página
     // de vendas mesmo assim. Este bloco sobrescreve explicitamente essa estrutura.
     if (typeChoice === 'app') {
+      const descText = description.trim() || 'nenhuma funcionalidade extra especificada — use seu bom senso para o nicho'
       compiled += `\n\nATENÇÃO — ISTO É UM APLICATIVO FUNCIONAL, NÃO UM SITE DE VENDAS:
 Desconsidere completamente qualquer seção de vendas, "Grade de Planos"/preços, depoimentos genéricos ou formulário de contato institucional descritos acima — essa estrutura era para a versão "site" (landing page), não para "app". Construa em vez disso uma experiência de aplicativo real, com estas telas:
 1. Tela de Login/Cadastro simples do cliente final (e-mail ou nome + telefone).
 2. Tela Principal: exibe ${contentEntity ? `a lista de "${contentEntity.label}" cadastrados pelo administrador (lidos da tabela "${contentEntity.table}" em tempo real)` : 'o conteúdo principal do negócio, cadastrado pelo administrador e lido em tempo real do banco de dados'}, organizados em cards ou lista — esta é a função real do app, não uma vitrine publicitária.
 3. Tela de Perfil: dados básicos do cliente final logado.
+4. Funcionalidades adicionais pedidas pelo usuário (IMPORTANTE, não ignore): ${descText}.
 NÃO inclua: seção de planos/preços de assinatura, depoimentos genéricos, hero de "landing page" com foto de banco de imagens, ou formulário de contato institucional com mapa fictício — nada disso pertence a um aplicativo de uso real.`
     }
 
