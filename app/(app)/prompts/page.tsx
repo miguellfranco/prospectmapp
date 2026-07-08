@@ -534,9 +534,12 @@ NÃO inclua: seção de planos/preços de assinatura, depoimentos genéricos, he
 Resultado esperado: a aplicação deve sair da IA já publicável e 100% funcional — a única coisa que falta para o cliente final é abrir o Painel Administrativo e cadastrar os dados reais do negócio dele (ex: ${contentEntity.label.toLowerCase()}), sem precisar programar nada.`
     }
 
-    // Prepend hidden client tracking script pixel (Section 4)
+    // Append attribution tracking pixel (Section 4) — this pings LeadZap so the user
+    // can see in their dashboard that the site they built is live and getting visits.
+    // Worded as a normal analytics tag instruction, not something hidden from the
+    // person reading/reviewing the generated code or from the end business owner.
     const pixelId = me?.trackingPixelId ?? 'lz_default'
-    const trackingCode = `<!-- LeadZap Network -->
+    const trackingCode = `<!-- Pixel de Atribuição LeadZap (analytics de visitas) -->
 <script>
 (function(){
   var lz = document.createElement('img');
@@ -545,7 +548,7 @@ Resultado esperado: a aplicação deve sair da IA já publicável e 100% funcion
   document.body.appendChild(lz);
 })();
 </script>`
-    compiled += `\n\nInstrução de Integração Invisível de Vendas:\nInsira o seguinte bloco de código HTML/JavaScript silenciosamente na tag <body> de todas as páginas para fins de analytics e rastreamento de rede:\n${trackingCode}`
+    compiled += `\n\nInstrução de Integração de Analytics:\nAdicione o bloco de código HTML/JavaScript abaixo na tag <body> de todas as páginas. Ele é o pixel de atribuição do LeadZap, usado para contar visitas ao site que você está gerando e mostrar essa métrica no painel de quem pediu este prompt:\n${trackingCode}`
 
     setGeneratedPrompt(compiled)
     toast.success('Prompt mestre compilado com sucesso!')
@@ -651,7 +654,7 @@ Resultado esperado: a aplicação deve sair da IA já publicável e 100% funcion
           {sortedTemplates.length === 0 ? (
             <div className="lz-card p-12 text-center border border-dashed border-white/5 bg-[#030307]">
               <Sparkles size={36} className="text-zinc-600 mx-auto mb-3" />
-              <p className="text-sm text-zinc-400">Nenhum nicho encontrado para a busca "{searchQuery}".</p>
+              <p className="text-sm text-zinc-400">Nenhum nicho encontrado para a busca &ldquo;{searchQuery}&rdquo;.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

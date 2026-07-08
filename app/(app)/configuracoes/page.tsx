@@ -415,13 +415,6 @@ export default function ConfiguracoesPage() {
                       </div>
                     ))}
                   </div>
-                  
-                  <button 
-                    onClick={() => toast.success('Outras sessões ativas encerradas com sucesso!')}
-                    className="text-[10px] text-zinc-500 hover:text-white transition-colors underline block"
-                  >
-                    Encerrar outras sessões ativas
-                  </button>
                 </div>
               </div>
 

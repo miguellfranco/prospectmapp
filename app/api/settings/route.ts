@@ -21,9 +21,6 @@ export async function GET() {
     const registeredCount = affiliates.length
     const totalCommissions = affiliates.reduce((acc, curr) => acc + (curr.totalEarned ?? 0), 0)
 
-    // Mock click counts for referral link (realistic statistics)
-    const clicksCount = Math.floor(registeredCount * 4.2 + 12)
-
     // 2. Fetch Active site network pings (safeguarded)
     let pingsList: any[] = []
     try {
@@ -33,11 +30,13 @@ export async function GET() {
       })
     } catch {}
 
-    // 3. Security mock session logs (Premium requirement)
+    // 3. Security session log. There's no multi-device session tracking in the
+    // database yet, so we only show the real current session — no fabricated
+    // extra devices (that previously could make a user think their account was
+    // compromised by a device that was never actually logged in).
     const lastSession = user.updatedAt ? (typeof user.updatedAt === 'string' ? user.updatedAt : user.updatedAt.toISOString()) : new Date().toISOString()
     const activeSessions = [
-      { id: '1', device: 'Windows PC • Chrome Browser', location: 'São Paulo, Brasil (Sua sessão atual)', active: true },
-      { id: '2', device: 'Apple iPhone 15 • Safari Mobile', location: 'São Paulo, Brasil', active: false }
+      { id: '1', device: 'Sessão atual', location: 'Este dispositivo', active: true },
     ]
 
     return NextResponse.json({
@@ -58,7 +57,6 @@ export async function GET() {
       },
       referral: {
         link: referralLink,
-        clicks: clicksCount,
         registrations: registeredCount,
         commissions: totalCommissions
       },
