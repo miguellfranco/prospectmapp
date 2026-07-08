@@ -21,18 +21,18 @@ const NICHE_TEMPLATES = [
     label: 'Academia / Fitness',
     cover: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=400&auto=format&fit=crop',
     suggestions: ['Área de treinos personalizada', 'Agendamento de aulas experimentais', 'Planos de mensalidade online', 'Galeria de fotos do espaço', 'Depoimentos de alunos reais'],
-    promptBase: `Você é um Engenheiro de Software Senior e Web Designer especialista em SaaS Fitness. Crie um site/app completo de alta conversão, responsivo e ultra moderno para a academia {NOME}. 
-    
+    promptBase: `Você é um Engenheiro de Software Senior e Web Designer especialista em SaaS Fitness. Crie um site/app completo de alta conversão, responsivo e ultra moderno para a academia {NOME}.
+
     Requisitos Técnicos:
     - Stack: React + Tailwind CSS, com animações suaves de entrada (Framer Motion).
-    - Design: Dark mode sofisticado com detalhes em roxo neon e cinza-grafite. Tipografia marcante e espaçamento limpo.
+    - Design: Dark mode sofisticado com detalhes na cor de destaque {COR} e cinza-grafite. Tipografia marcante e espaçamento limpo.
     - Seções:
       1. Hero Impactante: Slogan motivador, foto de alta qualidade em background com overlay e botão CTA destacado para matrícula.
       2. Grade de Planos: Card premium para plano mensal/anual com badges e preços claros.
       3. Funcionalidades: {DESCRICAO}.
       4. Depoimentos: Grid de alunos e avaliações em estrelas.
-      5. Contato: Formulário integrado com mapa local e botão para falar direto no WhatsApp: {TELEFONE}.
-    
+      5. Contato: Formulário integrado{MAPA} e botão para falar direto no WhatsApp: {TELEFONE}.
+
     Entregue o código limpo, estruturado, separado por componentes e pronto para produção.`
   },
   {
@@ -43,7 +43,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Você é um Designer especialista em negócios de beleza masculina. Crie um aplicativo web moderno e interativo para a barbearia {NOME} no segmento de {NICHO}.
     
     Requisitos do Aplicativo:
-    - Estilo: Vintage industrial com tons escuros (carbono) e detalhes em bronze/dourado.
+    - Estilo: Vintage industrial com tons escuros (carbono) e detalhes na cor de destaque {COR}.
     - Componentes de destaque:
       1. Sistema de Reservas: Calendário interativo para escolher data, horário e barbeiro preferido.
       2. Galeria de Estilos: Carrossel com fotos de cortes reais e depoimentos rápidos.
@@ -60,7 +60,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Você é um Web Developer especialista em gastronomia digital. Crie um site/app de alta conversão para o restaurante {NOME}.
     
     Requisitos:
-    - Design: Visual limpo com foco em fotos de comida em alta resolução, usando cores quentes e tipografia elegante.
+    - Design: Visual limpo com foco em fotos de comida em alta resolução, usando a cor de destaque {COR} e tipografia elegante.
     - Telas e seções:
       1. Cardápio Online: Categorizado por pratos principais, bebidas e sobremesas, com botão de adicionar ao carrinho.
       2. Calculadora de CEP: Campo simples para simular taxa de entrega.
@@ -77,7 +77,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um site premium e luxuoso para o salão de beleza {NOME} no nicho {NICHO}.
     
     Especificações:
-    - Visual: Cores pastéis, dourado, branco e tipografia elegante (Serif).
+    - Visual: Cores pastéis suaves combinadas com a cor de destaque {COR} e tipografia elegante (Serif).
     - Funcionalidades:
       1. Grade de Especialidades: Manicure, coloração, maquiagem e pacotes de noiva.
       2. Agenda Interativa: Usuário agenda e recebe confirmação.
@@ -92,7 +92,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um site profissional e institucional para a clínica {NOME} atuando em {NICHO}.
     
     Especificações:
-    - Visual: Cores limpas (azul, branco, verde-água), transmitindo calma, higiene e confiança.
+    - Visual: Cores limpas e claras com detalhes na cor de destaque {COR}, transmitindo calma, higiene e confiança.
     - Seções:
       1. Especialidades: Descrição detalhada dos atendimentos.
       2. Corpo Clínico: Fotos e currículos resumidos dos médicos/profissionais.
@@ -106,8 +106,9 @@ const NICHE_TEMPLATES = [
     cover: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=400&auto=format&fit=crop',
     suggestions: ['Montador de pizza (meio a meio)', 'Cardápio de sabores tradicionais e doces', 'Promoções de combos', 'Fila de pedidos online', 'Opção de retirada no local'],
     promptBase: `Crie um cardápio digital e sistema de pedidos online em tempo real para a pizzaria {NOME}.
-    
+
     Especificações:
+    - Visual: Tipografia apetitosa e convidativa, com destaque na cor {COR}.
     - Funcionalidades:
       1. Pizzas meio a meio com cálculo automático do maior valor.
       2. Seleção de borda recheada e refrigerantes.
@@ -122,7 +123,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie uma landing page de alta conversão para o pet shop e clínica {NOME}.
     
     Especificações:
-    - Visual: Cores amigáveis e divertidas (amarelo, azul-turquesa, branco).
+    - Visual: Cores amigáveis e divertidas com destaque na cor {COR}.
     - Recursos:
       1. Agendamento online de banho e tosa por porte de animal.
       2. Catálogo de serviços de clínica veterinária: {DESCRICAO}.
@@ -136,7 +137,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie uma landing page sofisticada de agendamento e conversão para a clínica de estética {NOME}.
     
     Especificações:
-    - Visual: Minimalista, elegante, tons rose gold, bege e cinza claro.
+    - Visual: Minimalista, elegante, tons neutros combinados com a cor de destaque {COR}.
     - Seções:
       1. Apresentação de tratamentos (peeling, botox, depilação a laser).
       2. Destaque de diferenciais: {DESCRICAO}.
@@ -150,7 +151,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um site profissional de serviços mecânicos para a oficina {NOME}.
     
     Especificações:
-    - Visual: Tons metálicos (grafite, amarelo-alerta, preto). Transmite robustez e honestidade técnica.
+    - Visual: Tons metálicos (grafite, preto) com destaque na cor {COR}. Transmite robustez e honestidade técnica.
     - Recursos:
       1. Formulário simples para cotar orçamento de serviços mecânicos.
       2. Lista de diferenciais: {DESCRICAO}.
@@ -164,7 +165,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um portal corporativo de advocacia de alto padrão para o escritório {NOME}.
     
     Especificações:
-    - Visual: Clássico, azul marinho, dourado, cinza escuro, transmitindo sobriedade e seriedade absoluta.
+    - Visual: Clássico, cinza escuro combinado com a cor de destaque {COR}, transmitindo sobriedade e seriedade absoluta.
     - Recursos:
       1. Seção detalhando áreas de atuação jurídicas.
       2. Diferenciais do escritório: {DESCRICAO}.
@@ -178,7 +179,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um app web moderno de delivery para a hamburgueria artesanal {NOME}.
     
     Especificações:
-    - Design: Visual rústico industrial, com tons de preto, vermelho e laranja.
+    - Design: Visual rústico industrial, com tons escuros e destaque na cor {COR}.
     - Recursos:
       1. Cardápio dinâmico com fotos grandes de hambúrgueres.
       2. Integração de carrinho de compras direto com WhatsApp {TELEFONE}.
@@ -192,7 +193,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um site profissional de odontologia para a clínica {NOME}.
     
     Especificações:
-    - Visual: Tons claros, azul pastel e branco. Transmite calma e higiene.
+    - Visual: Tons claros e brancos com destaque na cor {COR}. Transmite calma e higiene.
     - Seções:
       1. Tratamentos odontológicos oferecidos.
       2. Informações de cuidados e urgências: {DESCRICAO}.
@@ -206,7 +207,7 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um portfólio corporativo e institucional de engenharia e construção para a empresa {NOME}.
     
     Especificações:
-    - Visual: Branco, laranja de segurança e cinza-concreto.
+    - Visual: Branco e cinza-concreto com destaque na cor {COR}.
     - Recursos:
       1. Galeria de fotos de projetos concluídos e em andamento.
       2. Detalhes técnicos e sobre a empresa: {DESCRICAO}.
@@ -220,12 +221,25 @@ const NICHE_TEMPLATES = [
     promptBase: `Crie um site doce e acolhedor para a confeitaria gourmet {NOME}.
     
     Especificações:
-    - Visual: Tons pastéis (rosa bebê, baunilha, chocolate).
+    - Visual: Tons pastéis suaves combinados com a cor de destaque {COR}.
     - Recursos:
       1. Catálogo interativo de doces, bolos e salgados.
       2. Formulário detalhado de encomendas: {DESCRICAO}.
       3. Envio direto das encomendas para o WhatsApp {TELEFONE}.`
   }
+]
+
+// Cores de destaque selecionáveis pelo usuário — usadas para preencher o token {COR}
+// no lugar de uma cor fixa hardcoded (ex: sempre roxo), que ignorava o pedido do usuário.
+const COLOR_OPTIONS = [
+  { id: 'roxo', label: 'Roxo', hex: '#7c3aed' },
+  { id: 'laranja', label: 'Laranja', hex: '#f97316' },
+  { id: 'azul', label: 'Azul', hex: '#3b82f6' },
+  { id: 'verde', label: 'Verde', hex: '#10b981' },
+  { id: 'dourado', label: 'Dourado', hex: '#ca8a04' },
+  { id: 'rosa', label: 'Rosa', hex: '#ec4899' },
+  { id: 'vermelho', label: 'Vermelho', hex: '#ef4444' },
+  { id: 'preto_branco', label: 'Preto & Branco', hex: '#3f3f46' },
 ]
 
 // Entidade de conteúdo dinâmico que o dono do negócio vai preencher depois de pronto
@@ -445,6 +459,8 @@ export default function PromptsPage() {
   const [placeName, setPlaceName] = useState('')
   const [customNiche, setCustomNiche] = useState('')
   const [phone, setPhone] = useState('')
+  const [endereco, setEndereco] = useState('')
+  const [accentColor, setAccentColor] = useState(COLOR_OPTIONS[0].id)
   const [description, setDescription] = useState('')
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [typeChoice, setTypeChoice] = useState<'site' | 'app'>('site')
@@ -455,6 +471,8 @@ export default function PromptsPage() {
     setPlaceName('')
     setCustomNiche(n.label)
     setPhone('')
+    setEndereco('')
+    setAccentColor(COLOR_OPTIONS[0].id)
     setDescription('')
     setGeneratedPrompt('')
     setTypeChoice('site')
@@ -472,17 +490,36 @@ export default function PromptsPage() {
     if (!customNiche.trim()) { toast.error('O Segmento é obrigatório!'); return }
 
     let base = selectedNiche.promptBase
-    
+
+    const colorOption = COLOR_OPTIONS.find((c) => c.id === accentColor) ?? COLOR_OPTIONS[0]
+    const corText = `${colorOption.label.toLowerCase()} (${colorOption.hex})`
+    const mapaText = endereco.trim() ? ` com um mapa mostrando a localização em "${endereco.trim()}"` : ''
+
     // Replace custom tokens
     let compiled = base
       .replace(/{NOME}/g, placeName)
       .replace(/{NICHO}/g, customNiche)
       .replace(/{TELEFONE}/g, phone || 'Telefone não cadastrado')
+      .replace(/{COR}/g, corText)
+      .replace(/{MAPA}/g, mapaText)
       .replace(/{DESCRICAO}/g, description || `criação de um ${typeChoice} profissional moderno e completo`)
+
+    const contentEntity = NICHE_CONTENT_ENTITY[selectedNiche.id]
+
+    // Quando o usuário escolhe "App", as seções acima (herdadas do template de SITE/landing
+    // page de vendas) não servem — sem isso, a IA ignora a escolha de "app" e gera uma página
+    // de vendas mesmo assim. Este bloco sobrescreve explicitamente essa estrutura.
+    if (typeChoice === 'app') {
+      compiled += `\n\nATENÇÃO — ISTO É UM APLICATIVO FUNCIONAL, NÃO UM SITE DE VENDAS:
+Desconsidere completamente qualquer seção de vendas, "Grade de Planos"/preços, depoimentos genéricos ou formulário de contato institucional descritos acima — essa estrutura era para a versão "site" (landing page), não para "app". Construa em vez disso uma experiência de aplicativo real, com estas telas:
+1. Tela de Login/Cadastro simples do cliente final (e-mail ou nome + telefone).
+2. Tela Principal: exibe ${contentEntity ? `a lista de "${contentEntity.label}" cadastrados pelo administrador (lidos da tabela "${contentEntity.table}" em tempo real)` : 'o conteúdo principal do negócio, cadastrado pelo administrador e lido em tempo real do banco de dados'}, organizados em cards ou lista — esta é a função real do app, não uma vitrine publicitária.
+3. Tela de Perfil: dados básicos do cliente final logado.
+NÃO inclua: seção de planos/preços de assinatura, depoimentos genéricos, hero de "landing page" com foto de banco de imagens, ou formulário de contato institucional com mapa fictício — nada disso pertence a um aplicativo de uso real.`
+    }
 
     // Anexa exigência de arquitetura 100% funcional (CRUD + banco de dados real),
     // para a IA entregar a estrutura pronta e faltar só o dono preencher o conteúdo do dia a dia
-    const contentEntity = NICHE_CONTENT_ENTITY[selectedNiche.id]
     if (contentEntity) {
       compiled += `\n\nRequisitos Obrigatórios de Estrutura Completa (Backend Real, não mockado):
 1. Crie uma tabela no Supabase chamada "${contentEntity.table}" com os campos: ${contentEntity.fields.join(', ')}.
@@ -968,6 +1005,40 @@ Resultado esperado: a aplicação deve sair da IA já publicável e 100% funcion
                         className="lz-input"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">Endereço (opcional — só inclui mapa se preencher)</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Av. Brasil, 500 - Centro, Marília - SP"
+                      value={endereco}
+                      onChange={(e) => setEndereco(e.target.value)}
+                      className="lz-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">Cor de Destaque</label>
+                    <div className="flex flex-wrap gap-2">
+                      {COLOR_OPTIONS.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setAccentColor(c.id)}
+                          title={c.label}
+                          className="h-9 w-9 rounded-full flex items-center justify-center transition-all"
+                          style={{
+                            background: c.hex,
+                            border: accentColor === c.id ? '3px solid white' : '2px solid rgba(255,255,255,0.15)',
+                            boxShadow: accentColor === c.id ? `0 0 12px ${c.hex}` : 'none',
+                          }}
+                        >
+                          {accentColor === c.id && <Check size={14} className="text-white" strokeWidth={3} />}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-zinc-500 mt-1.5">{COLOR_OPTIONS.find((c) => c.id === accentColor)?.label}</p>
                   </div>
 
                   <div>
