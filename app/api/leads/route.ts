@@ -173,6 +173,11 @@ export async function POST(req: NextRequest) {
     if (pagedLeads.length < limit) {
       let needed = limit - pagedLeads.length
       let newlyCreated: any[] = []
+      // Shared across both the cache-reuse step and the Apify-fetch step below —
+      // previously each built its own Set from the original `existingLeads`, so a
+      // business added by the cache step could get created a second time by the
+      // Apify step within the very same request (duplicate Lead rows).
+      const existingNames = new Set(existingLeads.map((l: any) => l.businessName.toLowerCase()))
 
       // 0. REAPROVEITAR CACHE GLOBAL (compartilhado entre todos os usuários) ANTES DE GASTAR CRÉDITOS DA APIFY
       const cacheNiche = niche
@@ -180,7 +185,6 @@ export async function POST(req: NextRequest) {
       const CACHE_MAX_AGE_DAYS = 60
       try {
         const staleCutoff = new Date(Date.now() - CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000)
-        const existingNames = new Set(existingLeads.map((l: any) => l.businessName.toLowerCase()))
         const cached = await prisma.scrapedBusiness.findMany({
           where: { niche: cacheNiche, city: cacheCity, updatedAt: { gte: staleCutoff } },
           orderBy: { updatedAt: 'desc' },
@@ -275,7 +279,6 @@ export async function POST(req: NextRequest) {
         if (response.ok) {
           const items = await response.json()
           if (Array.isArray(items) && items.length > 0) {
-            const existingNames = new Set(existingLeads.map(l => l.businessName.toLowerCase()))
             const freshItems = items.filter(item => item.title && !existingNames.has(item.title.toLowerCase()))
 
             for (let i = 0; i < Math.min(freshItems.length, needed - newlyCreated.length); i++) {
@@ -332,6 +335,7 @@ export async function POST(req: NextRequest) {
                 leadObj = localLead
               }
               newlyCreated.push(leadObj)
+              existingNames.add(item.title.toLowerCase())
 
               // Grava no cache global compartilhado para outros usuários reaproveitarem sem gastar créditos da Apify
               try {
