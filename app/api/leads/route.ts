@@ -1,4 +1,9 @@
 export const dynamic = 'force-dynamic'
+// Apify's Google Maps scraper runs synchronously and realistically takes well
+// over the previous 8.5s abort timeout to boot a browser, load the map and
+// extract results — so with a valid token, this route still needs more than
+// Vercel's 10s default function duration to let a real scrape complete.
+export const maxDuration = 60
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
@@ -208,7 +213,7 @@ export async function POST(req: NextRequest) {
             language: 'pt',
             countryCode: 'BR'
           }),
-          signal: AbortSignal.timeout(8500)
+          signal: AbortSignal.timeout(55000)
         })
 
         if (response.ok) {
