@@ -13,6 +13,53 @@ import path from 'path'
 
 const LOCAL_DB_PATH = path.join(process.cwd(), 'prisma', 'local_leads_fallback.json')
 
+// Raw niche slugs (e.g. "clinica_medica", "muaythai") search poorly on Google Maps —
+// map them to natural search phrases. Falls back to the slug with underscores turned
+// into spaces for any niche not listed here.
+const NICHE_SEARCH_TERMS: Record<string, string> = {
+  suplementos: 'loja de suplementos',
+  muaythai: 'academia de muay thai',
+  jiujitsu: 'academia de jiu-jitsu',
+  funcional: 'treino funcional',
+  academia: 'academia de musculação',
+  pilates: 'estúdio de pilates',
+  restaurante: 'restaurante',
+  salao: 'salão de beleza',
+  barbearia: 'barbearia',
+  dentista: 'dentista',
+  estetica: 'clínica de estética',
+  petshop: 'pet shop',
+  oficina: 'oficina mecânica',
+  advocacia: 'escritório de advocacia',
+  imobiliaria: 'imobiliária',
+  contabilidade: 'escritório de contabilidade',
+  pizzaria: 'pizzaria',
+  hamburgueria: 'hamburgueria',
+  tatuagem: 'estúdio de tatuagem',
+  loja: 'loja de roupas',
+  crossfit: 'academia de crossfit',
+  clinica_medica: 'clínica médica',
+  farmacia: 'farmácia',
+  celulares: 'loja de celulares',
+  grafica: 'gráfica rápida',
+  escola_idiomas: 'escola de idiomas',
+  autoescola: 'autoescola',
+  floricultura: 'floricultura',
+  escola_infantil: 'escola infantil',
+  fotografo: 'estúdio de fotografia',
+  lavanderia: 'lavanderia',
+  padaria: 'padaria',
+  otica: 'ótica',
+}
+
+// Apify returns phone numbers already formatted with the country code
+// (e.g. "+55 13 99786-7077"), so prepending "55" again produced broken
+// wa.me links. Only add it if it's genuinely missing.
+function toWhatsAppDigits(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  return digits.startsWith('55') ? digits : `55${digits}`
+}
+
 function getLocalLeads(userId: string) {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
@@ -204,14 +251,18 @@ export async function POST(req: NextRequest) {
         if (!apifyToken) {
           throw new Error("Missing APIFY_API_TOKEN env var")
         }
-        const response = await fetch(`https://api.apify.com/v2/acts/apify~google-maps-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
+        const searchTerm = (NICHE_SEARCH_TERMS[niche] || niche.replace(/_/g, ' '))
+        // Actor is "compass/crawler-google-places" (the real, actively maintained Google
+        // Maps Scraper on Apify) — the previous "apify/google-maps-scraper" actor id does
+        // not exist, so every real search always 404'd here regardless of token/timeout.
+        const response = await fetch(`https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${apifyToken}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            searchStrings: [`${niche} em ${city}`],
+            searchStringsArray: [searchTerm],
+            locationQuery: `${city}, Brasil`,
             maxCrawledPlacesPerSearch: limit * page, // fetch matching size
-            language: 'pt',
-            countryCode: 'BR'
+            language: 'pt-BR'
           }),
           signal: AbortSignal.timeout(55000)
         })
@@ -226,9 +277,9 @@ export async function POST(req: NextRequest) {
               const item = freshItems[i]
               const hasWebsite = !!item.website
               const inTopGoogle = hasWebsite ? Math.random() > 0.4 : false
-              const gmbOptimized = (item.reviewsCount || 0) > 30 && (item.stars || 0) >= 4.0
-              const rating = item.stars || (Math.round((3.5 + Math.random() * 1.5) * 10) / 10)
-              const reviewCount = item.reviewsCount || Math.floor(10 + Math.random() * 200)
+              const gmbOptimized = (item.reviewsCount || 0) > 30 && (item.totalScore || 0) >= 4.0
+              const rating = item.totalScore ?? null
+              const reviewCount = item.reviewsCount ?? 0
               const yearsWithoutSite = hasWebsite ? 0 : 1 + Math.floor(Math.random() * 6)
               
               let score = 5.0
@@ -258,7 +309,7 @@ export async function POST(req: NextRequest) {
                 inTopGoogle,
                 gmbOptimized,
                 instagramUrl: item.instagram || null,
-                whatsappUrl: item.phone ? `https://wa.me/55${item.phone.replace(/\D/g, '')}` : null,
+                whatsappUrl: item.phone ? `https://wa.me/${toWhatsAppDigits(item.phone)}` : null,
               }
 
               let leadObj: any = null
