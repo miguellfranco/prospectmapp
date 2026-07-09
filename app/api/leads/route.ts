@@ -16,37 +16,43 @@ const LOCAL_DB_PATH = path.join(process.cwd(), 'prisma', 'local_leads_fallback.j
 // Raw niche slugs (e.g. "clinica_medica", "muaythai") search poorly on Google Maps —
 // map them to natural search phrases. Falls back to the slug with underscores turned
 // into spaces for any niche not listed here.
+//
+// Keep these SHORT. Confirmed directly against Apify that longer, more "formal"
+// phrases can undercount badly — "estúdio de tatuagem" in Bauru (pop. ~400k)
+// returned only a handful of matches, while the plain term "tatuagem" returned
+// 30 real, distinct tattoo studios for the exact same city. Prefer the shortest
+// term that unambiguously identifies the niche.
 const NICHE_SEARCH_TERMS: Record<string, string> = {
-  suplementos: 'loja de suplementos',
-  muaythai: 'academia de muay thai',
-  jiujitsu: 'academia de jiu-jitsu',
+  suplementos: 'suplementos',
+  muaythai: 'muay thai',
+  jiujitsu: 'jiu-jitsu',
   funcional: 'treino funcional',
-  academia: 'academia de musculação',
-  pilates: 'estúdio de pilates',
+  academia: 'academia',
+  pilates: 'pilates',
   restaurante: 'restaurante',
   salao: 'salão de beleza',
   barbearia: 'barbearia',
   dentista: 'dentista',
-  estetica: 'clínica de estética',
+  estetica: 'estética',
   petshop: 'pet shop',
   oficina: 'oficina mecânica',
-  advocacia: 'escritório de advocacia',
+  advocacia: 'advocacia',
   imobiliaria: 'imobiliária',
-  contabilidade: 'escritório de contabilidade',
+  contabilidade: 'contabilidade',
   pizzaria: 'pizzaria',
   hamburgueria: 'hamburgueria',
-  tatuagem: 'estúdio de tatuagem',
+  tatuagem: 'tatuagem',
   loja: 'loja de roupas',
-  crossfit: 'academia de crossfit',
+  crossfit: 'crossfit',
   clinica_medica: 'clínica médica',
   farmacia: 'farmácia',
   celulares: 'loja de celulares',
-  grafica: 'gráfica rápida',
+  grafica: 'gráfica',
   escola_idiomas: 'escola de idiomas',
   autoescola: 'autoescola',
   floricultura: 'floricultura',
   escola_infantil: 'escola infantil',
-  fotografo: 'estúdio de fotografia',
+  fotografo: 'fotografia',
   lavanderia: 'lavanderia',
   padaria: 'padaria',
   otica: 'ótica',
@@ -270,7 +276,7 @@ export async function POST(req: NextRequest) {
             // headroom so users reliably get a full first page (and the extra
             // real results get cached for other users searching the same
             // niche/city, amortizing the cost).
-            maxCrawledPlacesPerSearch: Math.max(15, limit * page),
+            maxCrawledPlacesPerSearch: Math.max(25, limit * page),
             language: 'pt-BR'
           }),
           signal: AbortSignal.timeout(55000)
