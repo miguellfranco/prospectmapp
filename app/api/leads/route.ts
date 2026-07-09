@@ -174,11 +174,11 @@ export async function POST(req: NextRequest) {
 
     const skip = (page - 1) * limit
     let pagedLeads = existingLeads.slice(skip, skip + limit)
+    let newlyCreated: any[] = []
 
     // Fetch more from cache/Apify if we don't have enough saved locally for this page
     if (pagedLeads.length < limit) {
       let needed = limit - pagedLeads.length
-      let newlyCreated: any[] = []
       // Shared across both the cache-reuse step and the Apify-fetch step below —
       // previously each built its own Set from the original `existingLeads`, so a
       // business added by the cache step could get created a second time by the
@@ -287,7 +287,11 @@ export async function POST(req: NextRequest) {
           if (Array.isArray(items) && items.length > 0) {
             const freshItems = items.filter(item => item.title && !existingNames.has(item.title.toLowerCase()))
 
-            for (let i = 0; i < Math.min(freshItems.length, needed - newlyCreated.length); i++) {
+            // Save every real result Apify returns, not just enough to fill this
+            // page. Apify was already asked (and paid) for up to ~25 places — only
+            // keeping `needed` (≤ page size) discarded the rest, so "load more"
+            // had to make a fresh paid Apify call for data we already had.
+            for (let i = 0; i < freshItems.length; i++) {
               const item = freshItems[i]
               const hasWebsite = !!item.website
               const inTopGoogle = hasWebsite ? Math.random() > 0.4 : false
@@ -380,13 +384,17 @@ export async function POST(req: NextRequest) {
         console.warn('Apify scrape failed or timed out. No fabricated leads are generated as a fallback — only real results are ever returned.', apifyError)
       }
 
-      pagedLeads = [...pagedLeads, ...newlyCreated]
+      // newlyCreated can now hold more than this page needs (every real result
+      // Apify/cache returned was saved) — only return `limit` of them here; the
+      // rest are already in the DB/cache for this page's "load more" and for
+      // other users searching the same niche/city.
+      pagedLeads = [...pagedLeads, ...newlyCreated].slice(0, limit)
     }
 
-    // Total known real results for this niche/city (cache + this search) — never fabricated.
-    // Grows as more real businesses are discovered; "load more" naturally stops once
-    // results.length reaches this, instead of promising a fake number of results.
-    const totalResults = Math.max(existingLeads.length, skip + pagedLeads.length)
+    // Total known real results for this niche/city (cache + this search) — never
+    // fabricated. existingLeads is the full pre-request count; newlyCreated is
+    // every new, deduped real business just saved this call (0 if none needed).
+    const totalResults = existingLeads.length + newlyCreated.length
 
     return NextResponse.json({
       totalResults,
