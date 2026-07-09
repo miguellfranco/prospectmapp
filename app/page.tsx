@@ -8,10 +8,12 @@ import {
   Star, Zap, BarChart3, ShieldCheck, Flame, Laptop, BookOpen, Compass,
   Menu, X as CloseIcon, CreditCard, Headset
 } from 'lucide-react'
+import { PixCheckoutModal } from '@/components/lz/pix-checkout-modal'
 
 export default function ProspectMapLanding() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
 
   const steps = [
     {
@@ -62,7 +64,7 @@ export default function ProspectMapLanding() {
     },
     { 
       q: 'Como funciona o suporte individual gratuito?', 
-      a: 'Para os planos Semestral e Anual, a partir do 6º mês de uso, você ganha acesso direto a um especialista da nossa equipe para sessões personalizadas de alinhamento estratégico via suporte por WhatsApp.' 
+      a: 'Para os planos Trimestral e Anual, a partir do 6º mês de uso, você ganha acesso direto a um especialista da nossa equipe para sessões personalizadas de alinhamento estratégico via suporte por WhatsApp.'
     },
     { 
       q: 'O que acontece quando as 500 vagas forem preenchidas?', 
@@ -349,7 +351,7 @@ export default function ProspectMapLanding() {
                 <div className="flex items-baseline gap-1 mb-8">
                   <span className="text-zinc-500 font-semibold">R$</span>
                   <span className="text-5xl font-black text-white font-grotesk">97</span>
-                  <span className="text-zinc-500 font-semibold">,90/mês</span>
+                  <span className="text-zinc-500 font-semibold">/mês</span>
                 </div>
                 
                 <ul className="flex-1 space-y-4 mb-10">
@@ -371,9 +373,9 @@ export default function ProspectMapLanding() {
                   </li>
                 </ul>
 
-                <Link href="/cadastro?plan=mensal" className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
+                <button onClick={() => setCheckoutPlan('mensal')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
                   ASSINAR AGORA
-                </Link>
+                </button>
               </div>
 
               {/* PLANO SEMESTRAL (PRINCIPAL / RECOMENDADO) */}
@@ -382,13 +384,13 @@ export default function ProspectMapLanding() {
                   Mais Vendido / Recomendado 🔥
                 </div>
                 
-                <h3 className="text-xl font-bold text-white mb-2 mt-2">Semestral (6 Meses)</h3>
+                <h3 className="text-xl font-bold text-white mb-2 mt-2">Trimestral (3 Meses)</h3>
                 <p className="text-xs text-amber-300 mb-6">Nosso plano mais completo para escalar suas vendas.</p>
-                <div className="text-xs text-zinc-500 line-through mb-1">De R$ 575,00</div>
+                <div className="text-xs text-zinc-500 line-through mb-1">De R$ 291,00</div>
                 <div className="flex items-baseline gap-1 mb-8">
                   <span className="text-zinc-500 font-semibold">Por R$</span>
                   <span className="text-5xl font-black text-white font-grotesk">197</span>
-                  <span className="text-zinc-500 font-semibold">,90/semestre</span>
+                  <span className="text-zinc-500 font-semibold">/trimestre</span>
                 </div>
                 
                 <div className="flex-1">
@@ -427,9 +429,9 @@ export default function ProspectMapLanding() {
                   </ul>
                 </div>
 
-                <Link href="/cadastro?plan=vitalicio" className="block w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-center font-black text-black transition-colors shadow-[0_0_25px_rgba(245,158,11,0.3)]">
-                  GARANTIR ACESSO SEMESTRAL
-                </Link>
+                <button onClick={() => setCheckoutPlan('trimestral')} className="block w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-center font-black text-black transition-colors shadow-[0_0_25px_rgba(245,158,11,0.3)]">
+                  GARANTIR ACESSO TRIMESTRAL
+                </button>
               </div>
 
               {/* PLANO ANUAL (12 MESES + 3 MESES DE PROMOÇÃO) */}
@@ -443,11 +445,11 @@ export default function ProspectMapLanding() {
                 
                 <h3 className="text-xl font-bold text-white mb-2">Anual (12 Meses + 3 Meses Grátis)</h3>
                 <p className="text-xs text-zinc-500 mb-6">Para quem está comprometido em dominar o mercado.</p>
-                <div className="text-xs text-zinc-500 line-through mb-1">De R$ 975,00</div>
+                <div className="text-xs text-zinc-500 line-through mb-1">De R$ 1.455,00</div>
                 <div className="flex items-baseline gap-1 mb-8">
                   <span className="text-zinc-500 font-semibold">Por R$</span>
-                  <span className="text-5xl font-black text-white font-grotesk">345</span>
-                  <span className="text-zinc-500 font-semibold">,90/ano</span>
+                  <span className="text-5xl font-black text-white font-grotesk">397</span>
+                  <span className="text-zinc-500 font-semibold">/ano</span>
                 </div>
                 
                 <div className="flex-1">
@@ -478,9 +480,9 @@ export default function ProspectMapLanding() {
                   </ul>
                 </div>
 
-                <Link href="/cadastro?plan=anual" className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
+                <button onClick={() => setCheckoutPlan('anual')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
                   ASSINAR ANUAL
-                </Link>
+                </button>
               </div>
 
             </div>
@@ -549,6 +551,10 @@ export default function ProspectMapLanding() {
           </p>
         </div>
       </footer>
+
+      {checkoutPlan && (
+        <PixCheckoutModal plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} />
+      )}
     </div>
   )
 }

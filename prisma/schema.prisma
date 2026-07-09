@@ -14,8 +14,9 @@ model User {
   email                String    @unique
   name                 String?
   passwordHash         String?
-  plan                 String    @default("free") // mensal | vitalicio | free
+  plan                 String    @default("free") // mensal | trimestral | anual | free
   planStatus           String    @default("trial") // active | inactive | trial
+  planExpiresAt        DateTime?
   stripeCustomerId     String?
   stripeSubscriptionId String?
   referralCode         String    @unique
@@ -33,9 +34,33 @@ model User {
   affiliatesAsReferrer Affiliate[] @relation("Referrer")
   affiliatesAsReferred Affiliate[] @relation("Referred")
   pixelPings           PixelPing[]
+  pixPayments          PixPayment[]
 
   @@index([referralCode])
   @@index([email])
+}
+
+model PixPayment {
+  id                String    @id @default(cuid())
+  abacatePayId      String    @unique // "transparents" charge id from AbacatePay
+  email             String
+  phone             String
+  plan              String    // mensal | trimestral | anual
+  amount            Int       // in cents, matches AbacatePay's data.amount
+  status            String    @default("pending") // pending | paid | expired | cancelled | failed
+  brCode            String?   @db.Text // PIX copia-e-cola code
+  brCodeBase64      String?   @db.Text // PIX QR code image (data URI)
+  expiresAt         DateTime
+  paidAt            DateTime?
+  accessGrantedAt   DateTime? // set once the account was created/renewed + email sent (idempotency guard)
+  userId            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([status])
 }
 
 model Lead {
