@@ -703,7 +703,12 @@ export default function ProspectarPage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-grotesk text-lg" style={{ color: 'var(--text-primary)' }}>
-              Resultados da Prospecção - {filteredResults.length} de {totalResults} empresas encontradas
+              Resultados da Prospecção - {totalResults} {totalResults === 1 ? 'empresa encontrada' : 'empresas encontradas'}
+              {filteredResults.length !== results.length && (
+                <span className="text-sm font-normal" style={{ color: 'var(--text-secondary)' }}>
+                  {' '}({filteredResults.length} após filtros — {results.length - filteredResults.length} ocultas por já terem site ou não terem telefone)
+                </span>
+              )}
             </h2>
             <button 
               onClick={() => { setResults([]); setCity(''); setPage(1); setTotalResults(0) }} 
