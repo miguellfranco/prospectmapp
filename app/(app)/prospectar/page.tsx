@@ -247,7 +247,7 @@ export default function ProspectarPage() {
 
     stepInterval = setInterval(() => {
       setScanStep((prev) => Math.min(scanMessages.length - 1, prev + 1))
-    }, 1300)
+    }, 3000)
 
     countInterval = setInterval(() => {
       setScanCount((prev) => Math.min(38, prev + Math.floor(Math.random() * 6 + 2)))
@@ -266,9 +266,6 @@ export default function ProspectarPage() {
     setResults([])
     setPage(1)
     setTotalResults(0)
-
-    // Simulate competitor radar scan
-    await new Promise((resolve) => setTimeout(resolve, 7500))
 
     try {
       const stateName = BRAZILIAN_STATES.find(s => s.code === selectedState)?.name || ''

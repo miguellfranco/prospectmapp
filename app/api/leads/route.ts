@@ -261,7 +261,12 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             searchStringsArray: [searchTerm],
             locationQuery: `${city}, Brasil`,
-            maxCrawledPlacesPerSearch: limit * page, // fetch matching size
+            // Asking for a small number of places sometimes returns fewer than
+            // the cap even when more exist for that search — request more
+            // headroom so users reliably get a full first page (and the extra
+            // real results get cached for other users searching the same
+            // niche/city, amortizing the cost).
+            maxCrawledPlacesPerSearch: Math.max(15, limit * page),
             language: 'pt-BR'
           }),
           signal: AbortSignal.timeout(55000)
