@@ -1,13 +1,19 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Copy, Check, Loader2, PartyPopper, QrCode, CreditCard } from 'lucide-react'
+import { X, Copy, Check, Loader2, PartyPopper, QrCode, CreditCard, ShieldCheck, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 const PLAN_LABELS: Record<string, string> = {
   mensal: 'Mensal — R$ 97,00',
   trimestral: 'Trimestral — R$ 197,00',
   anual: 'Anual — R$ 397,00 (+3 meses grátis)',
+}
+
+const PLAN_INFO: Record<string, { name: string; price: string; billing: string }> = {
+  mensal: { name: 'Plano Mensal', price: '97', billing: 'Cobrado a cada mês' },
+  trimestral: { name: 'Plano Trimestral', price: '197', billing: 'Cobrado a cada 3 meses' },
+  anual: { name: 'Plano Anual', price: '397', billing: 'Cobrado 1x por ano · +3 meses grátis' },
 }
 
 interface PixCheckoutModalProps {
@@ -144,30 +150,59 @@ export function PixCheckoutModal({ plan, onClose }: PixCheckoutModalProps) {
 
         {step === 'form' && (
           <form onSubmit={handleGenerate} className="space-y-5">
+            <div className="text-center">
+              <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-2">{PLAN_INFO[plan]?.name ?? plan}</p>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-zinc-500 font-semibold text-lg">R$</span>
+                <span className="text-4xl font-black text-white font-grotesk">{PLAN_INFO[plan]?.price ?? ''}</span>
+              </div>
+              <p className="text-xs text-zinc-500 mt-1">{PLAN_INFO[plan]?.billing ?? ''}</p>
+            </div>
+
             <div>
-              <h3 className="text-lg font-bold text-white font-grotesk">Quero entrar</h3>
-              <p className="text-sm text-zinc-400 mt-1">{PLAN_LABELS[plan] ?? plan}</p>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 text-center">Como deseja pagar?</p>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setMethod('PIX')}
+                  className={`w-full p-4 rounded-xl border text-left flex items-center gap-3 transition-colors relative ${
+                    method === 'PIX' ? 'border-emerald-500/60 bg-emerald-950/20' : 'border-white/10 bg-white/5 hover:bg-white/[0.07]'
+                  }`}
+                >
+                  {method === 'PIX' && (
+                    <span className="absolute -top-2 left-4 px-2 py-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black uppercase tracking-wider">
+                      Recomendado
+                    </span>
+                  )}
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                    <QrCode size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">PIX</p>
+                    <p className="text-[11px] text-emerald-400">Sem taxas extras · Acesso imediato</p>
+                  </div>
+                  <ChevronRight size={16} className="text-zinc-500 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMethod('CARD')}
+                  className={`w-full p-4 rounded-xl border text-left flex items-center gap-3 transition-colors ${
+                    method === 'CARD' ? 'border-violet-500/60 bg-violet-950/20' : 'border-white/10 bg-white/5 hover:bg-white/[0.07]'
+                  }`}
+                >
+                  <div className="w-9 h-9 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-300 shrink-0">
+                    <CreditCard size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">Cartão de Crédito</p>
+                    <p className="text-[11px] text-zinc-400">Em até 12x · Visa, Master, Elo, Amex</p>
+                  </div>
+                  <ChevronRight size={16} className="text-zinc-500 shrink-0" />
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMethod('PIX')}
-                className={`py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
-                  method === 'PIX' ? 'border-violet-500 bg-violet-950/30 text-white' : 'border-white/10 bg-white/5 text-zinc-400'
-                }`}
-              >
-                <QrCode size={16} /> PIX
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod('CARD')}
-                className={`py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
-                  method === 'CARD' ? 'border-violet-500 bg-violet-950/30 text-white' : 'border-white/10 bg-white/5 text-zinc-400'
-                }`}
-              >
-                <CreditCard size={16} /> Cartão
-              </button>
-            </div>
+
             <div>
               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">E-mail</label>
               <input
@@ -199,6 +234,12 @@ export function PixCheckoutModal({ plan, onClose }: PixCheckoutModalProps) {
                 ? 'Assim que o pagamento for confirmado, enviamos o acesso pro seu e-mail.'
                 : 'Você será direcionado para a página segura de pagamento e volta pra cá automaticamente.'}
             </p>
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-white/[0.03] border border-white/5">
+              <ShieldCheck size={15} className="text-emerald-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                <strong className="text-zinc-300">Pagamento processado com segurança pela AbacatePay</strong> — seus dados de pagamento não ficam armazenados aqui.
+              </p>
+            </div>
           </form>
         )}
 

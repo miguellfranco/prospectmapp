@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
 
     const checkout = await createCardCheckout({
       productId,
+      amountCents,
       externalId: payment.id,
       returnUrl: `${siteUrl}/`,
       completionUrl: `${siteUrl}/pagamento-confirmado?paymentId=${payment.id}`,

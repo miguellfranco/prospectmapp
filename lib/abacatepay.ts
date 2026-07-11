@@ -121,6 +121,7 @@ export async function createProduct(params: CreateProductParams): Promise<{ id: 
 
 export interface CreateCardCheckoutParams {
   productId: string
+  amountCents: number
   externalId: string
   returnUrl: string
   completionUrl: string
@@ -134,6 +135,12 @@ export interface AbacatePayCheckout {
   status: string
 }
 
+// AbacatePay requires at least R$10 per installment — 12x isn't valid for
+// every plan (e.g. R$97 / 12 < R$10), so cap dynamically per amount.
+function maxInstallmentsFor(amountCents: number): number {
+  return Math.max(1, Math.min(12, Math.floor(amountCents / 1000)))
+}
+
 export async function createCardCheckout(params: CreateCardCheckoutParams): Promise<AbacatePayCheckout> {
   const response = await fetch(`${ABACATEPAY_API_URL}/checkouts/create`, {
     method: 'POST',
@@ -141,6 +148,7 @@ export async function createCardCheckout(params: CreateCardCheckoutParams): Prom
     body: JSON.stringify({
       items: [{ id: params.productId, quantity: 1 }],
       methods: ['CARD'],
+      card: { maxInstallments: maxInstallmentsFor(params.amountCents) },
       externalId: params.externalId,
       returnUrl: params.returnUrl,
       completionUrl: params.completionUrl,
