@@ -3,7 +3,7 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { checkPixStatus } from '@/lib/abacatepay'
+import { checkPixStatus, checkCheckoutStatus } from '@/lib/abacatepay'
 import { grantAccessForPayment } from '@/lib/grant-access'
 
 export async function GET(req: NextRequest) {
@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
     // Webhook may not have arrived yet — cross-check directly with AbacatePay
     // as a fallback so the UI doesn't sit on "pending" longer than necessary.
     try {
-      const liveStatus = await checkPixStatus(payment.abacatePayId)
+      const liveStatus = payment.method === 'CARD'
+        ? await checkCheckoutStatus(payment.abacatePayId)
+        : await checkPixStatus(payment.abacatePayId)
       if (liveStatus === 'PAID' && payment.status !== 'paid') {
         await grantAccessForPayment(payment.id)
         return NextResponse.json({ status: 'paid' })

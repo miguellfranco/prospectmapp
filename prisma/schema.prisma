@@ -42,14 +42,16 @@ model User {
 
 model PixPayment {
   id                String    @id @default(cuid())
-  abacatePayId      String    @unique // "transparents" charge id from AbacatePay
+  abacatePayId      String    @unique // AbacatePay charge/checkout id ("transparents" or "checkouts")
+  method            String    @default("PIX") // PIX | CARD
   email             String
   phone             String
   plan              String    // mensal | trimestral | anual
   amount            Int       // in cents, matches AbacatePay's data.amount
   status            String    @default("pending") // pending | paid | expired | cancelled | failed
-  brCode            String?   @db.Text // PIX copia-e-cola code
-  brCodeBase64      String?   @db.Text // PIX QR code image (data URI)
+  brCode            String?   @db.Text // PIX copia-e-cola code (PIX only)
+  brCodeBase64      String?   @db.Text // PIX QR code image (data URI) (PIX only)
+  checkoutUrl       String?   @db.Text // AbacatePay hosted page URL (CARD only)
   expiresAt         DateTime
   paidAt            DateTime?
   accessGrantedAt   DateTime? // set once the account was created/renewed + email sent (idempotency guard)

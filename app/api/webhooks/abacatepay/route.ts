@@ -4,7 +4,7 @@ export const maxDuration = 30
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { checkPixStatus } from '@/lib/abacatepay'
+import { checkPixStatus, checkCheckoutStatus } from '@/lib/abacatepay'
 import { grantAccessForPayment } from '@/lib/grant-access'
 
 function isValidSignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
@@ -52,13 +52,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    if (eventType === 'transparent.completed' || event?.data?.status === 'PAID') {
+    if (eventType === 'transparent.completed' || eventType === 'checkout.completed' || event?.data?.status === 'PAID') {
       // Re-confirm directly with AbacatePay using our own API key rather than
       // trusting the webhook body's status field — the only thing the
       // signature actually proves is that the request came from AbacatePay's
       // infrastructure, not that this specific field wasn't manipulated
       // upstream of signing in some misconfiguration.
-      const liveStatus = await checkPixStatus(payment.abacatePayId)
+      const liveStatus = payment.method === 'CARD'
+        ? await checkCheckoutStatus(payment.abacatePayId)
+        : await checkPixStatus(payment.abacatePayId)
       if (liveStatus === 'PAID') {
         await grantAccessForPayment(payment.id)
       }

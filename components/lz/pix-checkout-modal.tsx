@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X, Copy, Check, Loader2, PartyPopper } from 'lucide-react'
+import { X, Copy, Check, Loader2, PartyPopper, QrCode, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 
 const PLAN_LABELS: Record<string, string> = {
@@ -19,6 +19,7 @@ type Step = 'form' | 'qrcode' | 'success' | 'expired'
 
 export function PixCheckoutModal({ plan, onClose }: PixCheckoutModalProps) {
   const [step, setStep] = useState<Step>('form')
+  const [method, setMethod] = useState<'PIX' | 'CARD'>('PIX')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,6 +46,22 @@ export function PixCheckoutModal({ plan, onClose }: PixCheckoutModalProps) {
     }
     setLoading(true)
     try {
+      if (method === 'CARD') {
+        const res = await fetch('/api/payments/card/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), phone: phone.trim(), plan }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          toast.error(data?.error || 'Erro ao gerar checkout de cartão.')
+          setLoading(false)
+          return
+        }
+        window.location.href = data.url
+        return
+      }
+
       const res = await fetch('/api/payments/pix/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,6 +148,26 @@ export function PixCheckoutModal({ plan, onClose }: PixCheckoutModalProps) {
               <h3 className="text-lg font-bold text-white font-grotesk">Quero entrar</h3>
               <p className="text-sm text-zinc-400 mt-1">{PLAN_LABELS[plan] ?? plan}</p>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMethod('PIX')}
+                className={`py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                  method === 'PIX' ? 'border-violet-500 bg-violet-950/30 text-white' : 'border-white/10 bg-white/5 text-zinc-400'
+                }`}
+              >
+                <QrCode size={16} /> PIX
+              </button>
+              <button
+                type="button"
+                onClick={() => setMethod('CARD')}
+                className={`py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                  method === 'CARD' ? 'border-violet-500 bg-violet-950/30 text-white' : 'border-white/10 bg-white/5 text-zinc-400'
+                }`}
+              >
+                <CreditCard size={16} /> Cartão
+              </button>
+            </div>
             <div>
               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">E-mail</label>
               <input
@@ -155,9 +192,13 @@ export function PixCheckoutModal({ plan, onClose }: PixCheckoutModalProps) {
             </div>
             <button type="submit" disabled={loading} className="lz-btn-primary w-full flex items-center justify-center gap-2">
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              Gerar PIX
+              {method === 'PIX' ? 'Gerar PIX' : 'Pagar com cartão'}
             </button>
-            <p className="text-[11px] text-zinc-500 text-center">Assim que o pagamento for confirmado, enviamos o acesso pro seu e-mail.</p>
+            <p className="text-[11px] text-zinc-500 text-center">
+              {method === 'PIX'
+                ? 'Assim que o pagamento for confirmado, enviamos o acesso pro seu e-mail.'
+                : 'Você será direcionado para a página segura de pagamento e volta pra cá automaticamente.'}
+            </p>
           </form>
         )}
 

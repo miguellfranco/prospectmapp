@@ -22,6 +22,15 @@ export const PLAN_LABELS: Record<string, string> = {
   anual: 'Anual (+3 meses grátis)',
 }
 
+// One-time (non-subscription) Product ids, created once via a one-off setup
+// call to POST /products/create — required by /checkouts/create (card
+// payments), unlike /transparents/create (PIX) which takes an ad-hoc amount.
+export const PLAN_PRODUCT_IDS: Record<string, string> = {
+  mensal: process.env.ABACATEPAY_PRODUCT_MENSAL || '',
+  trimestral: process.env.ABACATEPAY_PRODUCT_TRIMESTRAL || '',
+  anual: process.env.ABACATEPAY_PRODUCT_ANUAL || '',
+}
+
 function getApiKey(): string {
   const key = process.env.ABACATEPAY_API_KEY
   if (!key) throw new Error('Missing ABACATEPAY_API_KEY env var')
@@ -83,4 +92,80 @@ export async function checkPixStatus(abacatePayId: string): Promise<string> {
     throw new Error(`AbacatePay status check failed: ${response.status} ${JSON.stringify(json)}`)
   }
   return json.data.status as string
+}
+
+export interface CreateProductParams {
+  externalId: string
+  name: string
+  priceCents: number
+}
+
+export async function createProduct(params: CreateProductParams): Promise<{ id: string }> {
+  const response = await fetch(`${ABACATEPAY_API_URL}/products/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getApiKey()}` },
+    body: JSON.stringify({
+      externalId: params.externalId,
+      name: params.name,
+      price: params.priceCents,
+      currency: 'BRL',
+    }),
+    signal: AbortSignal.timeout(20000),
+  })
+  const json = await response.json().catch(() => null)
+  if (!response.ok || !json?.success) {
+    throw new Error(`AbacatePay product creation failed: ${response.status} ${JSON.stringify(json)}`)
+  }
+  return json.data
+}
+
+export interface CreateCardCheckoutParams {
+  productId: string
+  externalId: string
+  returnUrl: string
+  completionUrl: string
+  metadata: Record<string, string>
+}
+
+export interface AbacatePayCheckout {
+  id: string
+  url: string
+  amount: number
+  status: string
+}
+
+export async function createCardCheckout(params: CreateCardCheckoutParams): Promise<AbacatePayCheckout> {
+  const response = await fetch(`${ABACATEPAY_API_URL}/checkouts/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getApiKey()}` },
+    body: JSON.stringify({
+      items: [{ id: params.productId, quantity: 1 }],
+      methods: ['CARD'],
+      externalId: params.externalId,
+      returnUrl: params.returnUrl,
+      completionUrl: params.completionUrl,
+      metadata: params.metadata,
+    }),
+    signal: AbortSignal.timeout(20000),
+  })
+  const json = await response.json().catch(() => null)
+  if (!response.ok || !json?.success) {
+    throw new Error(`AbacatePay checkout creation failed: ${response.status} ${JSON.stringify(json)}`)
+  }
+  return json.data
+}
+
+export async function checkCheckoutStatus(abacatePayId: string): Promise<string> {
+  const response = await fetch(`${ABACATEPAY_API_URL}/checkouts/list?id=${encodeURIComponent(abacatePayId)}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${getApiKey()}` },
+    signal: AbortSignal.timeout(15000),
+  })
+  const json = await response.json().catch(() => null)
+  if (!response.ok || !json?.success) {
+    throw new Error(`AbacatePay checkout status check failed: ${response.status} ${JSON.stringify(json)}`)
+  }
+  const match = Array.isArray(json.data) ? json.data.find((c: any) => c.id === abacatePayId) : null
+  if (!match) throw new Error(`Checkout ${abacatePayId} not found in list response`)
+  return match.status as string
 }
