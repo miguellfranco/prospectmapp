@@ -302,28 +302,42 @@ export default function ProspectMapLanding() {
             {/* Big Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
               {stats.map((s, i) => (
-                <div key={i} className="flex flex-col items-center justify-center p-8 rounded-2xl bg-white/[0.01] border border-white/5 relative overflow-hidden">
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  whileHover={{ y: -4 }}
+                  className="flex flex-col items-center justify-center p-8 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-violet-500/25 hover:bg-white/[0.03] relative overflow-hidden transition-colors"
+                >
                   <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
                   <div className="text-5xl font-black text-white tracking-tight mb-2 font-grotesk">{s.value}</div>
                   <div className="text-zinc-500 text-xs uppercase font-semibold tracking-wider">{s.label}</div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
             {/* TRUST BAR — garantias reais, sem contador fabricado */}
             <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
-              <div className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] text-left">
-                <CreditCard size={20} className="text-violet-400 shrink-0" />
-                <span className="text-xs text-zinc-300">Sem fidelidade — cancele quando quiser</span>
-              </div>
-              <div className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] text-left">
-                <Zap size={20} className="text-violet-400 shrink-0" />
-                <span className="text-xs text-zinc-300">Acesso liberado na hora, após a assinatura</span>
-              </div>
-              <div className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] text-left">
-                <Headset size={20} className="text-violet-400 shrink-0" />
-                <span className="text-xs text-zinc-300">Suporte direto pelo WhatsApp</span>
-              </div>
+              {[
+                { icon: CreditCard, text: 'Sem fidelidade — cancele quando quiser' },
+                { icon: Zap, text: 'Acesso liberado na hora, após a assinatura' },
+                { icon: Headset, text: 'Suporte direto pelo WhatsApp' },
+              ].map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                  whileHover={{ y: -2 }}
+                  className="flex items-center gap-3 p-5 rounded-2xl border border-white/5 bg-white/[0.01] hover:border-violet-500/20 text-left transition-colors"
+                >
+                  <t.icon size={20} className="text-violet-400 shrink-0" />
+                  <span className="text-xs text-zinc-300">{t.text}</span>
+                </motion.div>
+              ))}
             </div>
 
             <Link href="#planos" className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 hover:border-violet-500/40 transition-all">
@@ -345,7 +359,12 @@ export default function ProspectMapLanding() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
               
               {/* PLANO MENSAL */}
-              <div className="rounded-3xl border border-white/10 bg-[#07070f] p-8 flex flex-col hover:border-violet-500/20 transition-all">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="rounded-3xl border border-white/10 bg-[#07070f] p-8 flex flex-col hover:border-violet-500/20 hover:-translate-y-1 transition-all">
                 <h3 className="text-xl font-bold text-white mb-2">Mensal</h3>
                 <p className="text-xs text-zinc-500 mb-8">Ideal para testar rápido e sentir o poder da IA.</p>
                 <div className="flex items-baseline gap-1 mb-8">
@@ -376,10 +395,15 @@ export default function ProspectMapLanding() {
                 <button onClick={() => setCheckoutPlan('mensal')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
                   ASSINAR AGORA
                 </button>
-              </div>
+              </motion.div>
 
               {/* PLANO SEMESTRAL (PRINCIPAL / RECOMENDADO) */}
-              <div className="rounded-3xl border-2 border-amber-500 bg-amber-950/15 p-8 flex flex-col relative transform md:-translate-y-6 shadow-[0_0_50px_rgba(245,158,11,0.15)]">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="rounded-3xl border-2 border-amber-500 bg-amber-950/15 p-8 flex flex-col relative transform md:-translate-y-6 hover:md:-translate-y-8 shadow-[0_0_50px_rgba(245,158,11,0.15)] transition-transform">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-black tracking-widest uppercase whitespace-nowrap">
                   Mais Vendido / Recomendado 🔥
                 </div>
@@ -432,10 +456,15 @@ export default function ProspectMapLanding() {
                 <button onClick={() => setCheckoutPlan('trimestral')} className="block w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-center font-black text-black transition-colors shadow-[0_0_25px_rgba(245,158,11,0.3)]">
                   GARANTIR ACESSO TRIMESTRAL
                 </button>
-              </div>
+              </motion.div>
 
               {/* PLANO ANUAL (12 MESES + 3 MESES DE PROMOÇÃO) */}
-              <div className="rounded-3xl border border-violet-500/30 bg-[#07070f] p-8 flex flex-col hover:border-violet-500/50 transition-all relative overflow-hidden shadow-[0_0_40px_rgba(124,58,237,0.05)]">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="rounded-3xl border border-violet-500/30 bg-[#07070f] p-8 flex flex-col hover:border-violet-500/50 hover:-translate-y-1 transition-all relative overflow-hidden shadow-[0_0_40px_rgba(124,58,237,0.05)]">
                 {/* Posicionado no topo como elemento em fluxo para evitar sobreposição de textos em telas mobile */}
                 <div className="mb-4 flex">
                   <span className="px-3 py-1 rounded-full bg-violet-600/20 border border-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wider">
@@ -483,7 +512,7 @@ export default function ProspectMapLanding() {
                 <button onClick={() => setCheckoutPlan('anual')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
                   ASSINAR ANUAL
                 </button>
-              </div>
+              </motion.div>
 
             </div>
 
