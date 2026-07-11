@@ -159,16 +159,23 @@ export async function POST(req: NextRequest) {
       leadsTodayCount = getLocalLeads(user.id).filter((l: any) => l.viewed && new Date(l.updatedAt).getTime() >= startOfToday.getTime()).length
     }
 
-    // Reuse/cache search logic to save Apify API tokens and reload existing data
+    // Reuse/cache search logic to save Apify API tokens and reload existing data.
+    // Match on just the city name (before the comma/state), not the full
+    // "Cidade, UF" search input — saved leads store Apify's real address
+    // ("R. X, Bauru - SP, 17025-XXX, Brasil"), which never contains the exact
+    // "Bauru, SP" substring, so matching on the full string always came back
+    // empty and every search re-created "new" duplicates of the same real
+    // businesses instead of reusing what was already saved.
+    const cityNameForMatch = city.split(',')[0].trim()
     let existingLeads: any[] = []
     try {
       existingLeads = await prisma.lead.findMany({
-        where: { userId: user.id, niche, city: { contains: city, mode: 'insensitive' } },
+        where: { userId: user.id, niche, city: { contains: cityNameForMatch, mode: 'insensitive' } },
         orderBy: { createdAt: 'desc' }
       })
     } catch {
       existingLeads = getLocalLeads(user.id).filter(
-        (l: any) => l.niche === niche && l.city?.toLowerCase().includes(city.toLowerCase())
+        (l: any) => l.niche === niche && l.city?.toLowerCase().includes(cityNameForMatch.toLowerCase())
       )
     }
 
@@ -271,12 +278,12 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             searchStringsArray: [searchTerm],
             locationQuery: `${city}, Brasil`,
-            // Asking for a small number of places sometimes returns fewer than
-            // the cap even when more exist for that search — request more
-            // headroom so users reliably get a full first page (and the extra
-            // real results get cached for other users searching the same
-            // niche/city, amortizing the cost).
-            maxCrawledPlacesPerSearch: Math.max(25, limit * page),
+            // Ask for a much bigger pool than one page needs (~70) so the
+            // "load more" flow (still 5 at a time) can page through cached,
+            // already-fetched real results instead of hitting Apify again on
+            // almost every click. This also enriches the shared cache for
+            // every other user searching the same niche/city.
+            maxCrawledPlacesPerSearch: Math.max(70, limit * page),
             language: 'pt-BR'
           }),
           signal: AbortSignal.timeout(55000)
