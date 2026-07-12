@@ -6,6 +6,7 @@ export const PLAN_PRICES_CENTS: Record<string, number> = {
   mensal: 9700,
   trimestral: 19700,
   anual: 39700,
+  vitalicio: 29700,
 }
 
 // How long access lasts per plan once paid. "anual" is 12 months + the
@@ -14,12 +15,14 @@ export const PLAN_DURATION_DAYS: Record<string, number> = {
   mensal: 30,
   trimestral: 90,
   anual: 455, // 365 + 90 (3 bonus months)
+  vitalicio: 36500, // acesso vitalício (~100 anos)
 }
 
 export const PLAN_LABELS: Record<string, string> = {
   mensal: 'Mensal',
   trimestral: 'Trimestral',
   anual: 'Anual (+3 meses grátis)',
+  vitalicio: 'Vitalício',
 }
 
 // One-time (non-subscription) Product ids, created once via a one-off setup
@@ -29,6 +32,7 @@ export const PLAN_PRODUCT_IDS: Record<string, string> = {
   mensal: process.env.ABACATEPAY_PRODUCT_MENSAL || '',
   trimestral: process.env.ABACATEPAY_PRODUCT_TRIMESTRAL || '',
   anual: process.env.ABACATEPAY_PRODUCT_ANUAL || '',
+  vitalicio: process.env.ABACATEPAY_PRODUCT_VITALICIO || '',
 }
 
 function getApiKey(): string {

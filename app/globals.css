@@ -4,17 +4,17 @@
 
 @layer base {
   :root {
-    /* LeadZap premium futuristic dark mode palette */
+    /* EbookAI premium futuristic dark mode palette (preto + roxo #7c3aed) */
     --bg-primary: #05050b;
     --bg-secondary: #0a0a18;
     --bg-elevated: #111126;
     --bg-hover: #171735;
-    
-    --purple-core: #8b5cf6;
-    --purple-light: #a78bfa;
-    --purple-soft: #c084fc;
-    --purple-glow: rgba(139, 92, 246, 0.3);
-    --purple-border: rgba(139, 92, 246, 0.45);
+
+    --purple-core: #7c3aed;
+    --purple-light: #8b5cf6;
+    --purple-soft: #a78bfa;
+    --purple-glow: rgba(124, 58, 237, 0.3);
+    --purple-border: rgba(124, 58, 237, 0.45);
     
     --border-default: #181830;
     --border-hover: #8b5cf6;
@@ -62,9 +62,9 @@
 
   body {
     background-color: var(--bg-primary);
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+    background-image:
+      radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.06) 0px, transparent 50%);
     background-attachment: fixed;
     color: var(--text-primary);
     font-family: var(--font-inter), system-ui, sans-serif;

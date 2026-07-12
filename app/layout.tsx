@@ -13,15 +13,15 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
-  title: 'ProspectMap — Prospecção inteligente. Resultado real.',
-  description: 'Encontre clientes ideais via Google Maps, gere mensagens com IA e feche mais vendas. A ferramenta de prospecção de leads para empreendedores e agências.',
+  title: 'EbookAI — Crie e venda infoprodutos completos com IA',
+  description: 'Gere um e-book, cadastre o produto, publique uma página de vendas e descubra onde divulgar — tudo em 4 passos com inteligência artificial.',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'ProspectMap — Prospecção inteligente. Resultado real.',
-    description: 'Encontre clientes ideais via Google Maps, gere mensagens com IA e feche mais vendas.',
+    title: 'EbookAI — Crie e venda infoprodutos completos com IA',
+    description: 'E-book, produto, página de vendas e divulgação — seu infoproduto pronto em 4 passos com IA.',
     images: ['/og-image.png'],
     type: 'website',
   },
@@ -30,9 +30,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className="dark" suppressHydrationWarning>
-      <head>
-        <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" async></script>
-      </head>
       <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} ${inter.variable} font-inter`}>
         <Providers>
           {children}

@@ -8,12 +8,14 @@ const PLAN_LABELS: Record<string, string> = {
   mensal: 'Mensal — R$ 97,00',
   trimestral: 'Trimestral — R$ 197,00',
   anual: 'Anual — R$ 397,00 (+3 meses grátis)',
+  vitalicio: 'Vitalício — R$ 297,00 (pagamento único)',
 }
 
 const PLAN_INFO: Record<string, { name: string; price: string; billing: string }> = {
   mensal: { name: 'Plano Mensal', price: '97', billing: 'Cobrado a cada mês' },
   trimestral: { name: 'Plano Trimestral', price: '197', billing: 'Cobrado a cada 3 meses' },
   anual: { name: 'Plano Anual', price: '397', billing: 'Cobrado 1x por ano · +3 meses grátis' },
+  vitalicio: { name: 'Plano Vitalício', price: '297', billing: 'Pagamento único · Acesso para sempre' },
 }
 
 interface PixCheckoutModalProps {

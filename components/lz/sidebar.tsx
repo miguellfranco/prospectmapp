@@ -5,16 +5,14 @@ import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import {
-  Radar, Search, MessageSquare, FileText, BarChart3, Trophy, Users, Settings, LogOut, Zap, BookOpen,
+  LayoutDashboard, Sparkles, Layers, Plug, Settings, LogOut, BookOpen,
 } from 'lucide-react'
 
 const NAV = [
-  { href: '/dashboard', label: 'Painel', icon: Radar },
-  { href: '/prospectar', label: 'Prospectar', icon: Search },
-  { href: '/mensagens', label: 'Mensagens', icon: MessageSquare },
-  { href: '/prompts', label: 'Gerador de Prompts', icon: FileText },
-  { href: '/central-publicacao', label: 'Central de Publicação', icon: BookOpen },
-  { href: '/ranking', label: 'Ranking', icon: Trophy },
+  { href: '/painel', label: 'Painel', icon: LayoutDashboard },
+  { href: '/estruturas/nova', label: 'Nova Estrutura', icon: Sparkles },
+  { href: '/estruturas', label: 'Minhas Estruturas', icon: Layers },
+  { href: '/integracoes', label: 'Integrações', icon: Plug },
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
 ]
 
@@ -41,8 +39,8 @@ export function Sidebar() {
         style={{ background: 'var(--bg-primary)', borderRight: '1px solid var(--border-default)' }}
       >
         <div className="px-6 py-6 flex items-center gap-2">
-          <Zap size={22} style={{ color: 'var(--purple-core)' }} fill="var(--purple-core)" />
-          <span className="font-grotesk font-bold text-xl text-glow" style={{ color: 'var(--text-primary)' }}>ProspectMap</span>
+          <BookOpen size={22} style={{ color: 'var(--purple-core)' }} />
+          <span className="font-grotesk font-bold text-xl text-glow" style={{ color: 'var(--text-primary)' }}>EbookAI</span>
         </div>
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto scrollbar-none">

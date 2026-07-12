@@ -35,6 +35,9 @@ model User {
   affiliatesAsReferred Affiliate[] @relation("Referred")
   pixelPings           PixelPing[]
   pixPayments          PixPayment[]
+  paymentIntegrations  PaymentIntegration[]
+  structures           Structure[]
+  infoproductSales     InfoproductSale[]
 
   @@index([referralCode])
   @@index([email])
@@ -181,6 +184,132 @@ model ScrapedBusiness {
 
   @@unique([niche, city, businessName])
   @@index([niche, city])
+}
+
+// ============================================================
+// EbookAI — gerador de infoprodutos com IA (pivot 2026-07)
+// ============================================================
+
+model PaymentIntegration {
+  id             String    @id @default(cuid())
+  userId         String
+  provider       String    // kiwify | hotmart | outro
+  label          String?
+  credentialsEnc String    @db.Text // JSON criptografado (AES-256-GCM)
+  status         String    @default("desconectado") // conectado | erro | desconectado
+  statusMessage  String?
+  lastCheckedAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products       EbookProduct[]
+  infoSales      InfoproductSale[]
+
+  @@index([userId])
+}
+
+// Uma "Estrutura" = um funil de infoproduto completo (wizard de 4 passos)
+model Structure {
+  id        String   @id @default(cuid())
+  userId    String
+  niche     String
+  subNiche  String?
+  title     String   // dor principal / headline escolhida
+  status    String   @default("rascunho") // rascunho | conteudo_gerado | precificado | landing_gerada | concluida
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product          EbookProduct?
+  landingPage      LandingPage?
+  outreachGroups   OutreachGroup[]
+  outreachMessages OutreachMessage[]
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
+
+model EbookProduct {
+  id                   String   @id @default(cuid())
+  structureId          String   @unique
+  name                 String
+  content              String?  @db.Text // markdown completo do e-book
+  price                Float?
+  paymentIntegrationId String?
+  externalProductId    String?
+  checkoutUrl          String?  @db.Text
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  structure          Structure           @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  paymentIntegration PaymentIntegration? @relation(fields: [paymentIntegrationId], references: [id], onDelete: SetNull)
+  infoSales          InfoproductSale[]
+}
+
+model LandingPage {
+  id             String    @id @default(cuid())
+  structureId    String    @unique
+  slug           String    @unique
+  primaryColor   String    @default("#7c3aed")
+  secondaryColor String    @default("#05050b")
+  headline       String
+  subheadline    String?
+  copyJson       String    @db.Text // seções geradas pela IA (benefícios, por que funciona, FAQ, CTA)
+  priceDisplay   String?
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  structure Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+}
+
+model OutreachGroup {
+  id          String   @id @default(cuid())
+  structureId String
+  platform    String   // facebook | whatsapp
+  groupName   String
+  groupUrl    String   @db.Text
+  memberCount Int?
+  country     String   @default("BR")
+  createdAt   DateTime @default(now())
+
+  structure Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([structureId])
+}
+
+model OutreachMessage {
+  id            String   @id @default(cuid())
+  structureId   String
+  generatedText String   @db.Text
+  createdAt     DateTime @default(now())
+
+  structure Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+
+  @@index([structureId])
+}
+
+// Vendas dos infoprodutos dos usuários, recebidas via webhook dos gateways
+model InfoproductSale {
+  id                   String   @id @default(cuid())
+  userId               String
+  productId            String?
+  paymentIntegrationId String?
+  amount               Float    // em reais
+  gateway              String?  // kiwify | hotmart | outro
+  gatewayTransactionId String?  @unique
+  buyerEmail           String?
+  paidAt               DateTime @default(now())
+  createdAt            DateTime @default(now())
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product            EbookProduct?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  paymentIntegration PaymentIntegration? @relation(fields: [paymentIntegrationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, paidAt])
 }
 
 model PixelPing {

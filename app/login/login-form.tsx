@@ -24,7 +24,7 @@ export function LoginForm() {
         toast.error('E-mail ou senha incorretos.')
       } else {
         toast.success('Bem-vindo de volta!')
-        router.replace('/dashboard')
+        router.replace('/painel')
       }
     } catch {
       toast.error('Erro ao entrar. Tente novamente.')
@@ -42,9 +42,9 @@ export function LoginForm() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="flex items-center gap-2 mb-3">
             <Zap size={28} style={{ color: 'var(--purple-core)' }} fill="var(--purple-core)" />
-            <span className="font-grotesk font-bold text-2xl text-glow" style={{ color: 'var(--text-primary)' }}>ProspectMap</span>
+            <span className="font-grotesk font-bold text-2xl text-glow" style={{ color: 'var(--text-primary)' }}>EbookAI</span>
           </div>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Prospecção inteligente. Resultado real.</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Seu infoproduto completo em 4 passos com IA.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

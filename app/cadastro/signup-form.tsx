@@ -60,7 +60,7 @@ export function SignupForm() {
       if (!res.ok) { toast.error(data?.error ?? 'Erro ao criar conta.'); return }
       toast.success('Conta criada! Entrando...')
       const login = await signIn('credentials', { email, password, redirect: false })
-      if (login?.error) { router.replace('/login') } else { router.replace('/dashboard') }
+      if (login?.error) { router.replace('/login') } else { router.replace('/painel') }
     } catch {
       toast.error('Erro ao criar conta. Tente novamente.')
     } finally {
@@ -75,9 +75,9 @@ export function SignupForm() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Zap size={28} style={{ color: 'var(--purple-core)' }} fill="var(--purple-core)" />
-            <span className="font-grotesk font-bold text-2xl text-glow" style={{ color: 'var(--text-primary)' }}>ProspectMap</span>
+            <span className="font-grotesk font-bold text-2xl text-glow" style={{ color: 'var(--text-primary)' }}>EbookAI</span>
           </div>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Crie sua conta e comece a prospectar hoje mesmo.</p>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Crie sua conta e lance seu primeiro infoproduto hoje mesmo.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">

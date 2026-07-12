@@ -7,6 +7,6 @@ import { SignupForm } from './signup-form'
 
 export default async function CadastroPage() {
   const session = await getServerSession(authOptions)
-  if (session?.user) redirect('/dashboard')
+  if (session?.user) redirect('/painel')
   return <SignupForm />
 }
