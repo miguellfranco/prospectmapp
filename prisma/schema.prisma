@@ -234,7 +234,8 @@ model EbookProduct {
   id                   String   @id @default(cuid())
   structureId          String   @unique
   name                 String
-  content              String?  @db.Text // markdown completo do e-book
+  content              String?  @db.Text // versão texto/markdown do e-book (referência/edição)
+  designJson           String?  @db.Text // estrutura página-por-página do livro designado (JSON)
   price                Float?
   paymentIntegrationId String?
   externalProductId    String?

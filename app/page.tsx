@@ -19,7 +19,7 @@ export default function InfoBookLanding() {
     {
       step: 'PASSO — 1',
       title: 'E-book pronto com IA',
-      desc: 'Escolha o nicho e a dor principal do seu público. A IA escreve um e-book completo, estruturado e pronto para entregar.',
+      desc: 'Escolha o nicho e a dor do seu público. A IA cria um e-book com design profissional, página por página — capa, capítulos, passo a passo e checklists.',
       icon: Wand2,
     },
     {
@@ -43,7 +43,7 @@ export default function InfoBookLanding() {
   ]
 
   const features = [
-    { icon: Wand2, title: 'E-books ilimitados', desc: 'Gere quantos e-books quiser, em mais de 20 nichos validados ou em qualquer nicho que você digitar.' },
+    { icon: Wand2, title: 'E-books com design de verdade', desc: 'Livros diagramados página por página — capa, capítulos e checklists — em mais de 20 nichos validados ou no nicho que você digitar.' },
     { icon: Globe, title: 'Landing page 100% sua', desc: 'Baixe a página pronta com copy de conversão feita por IA e publique grátis onde quiser — com pré-visualização instantânea.' },
     { icon: CreditCard, title: 'Integração com gateways', desc: 'Conecte Kiwify ou Hotmart e acompanhe as vendas dos seus produtos direto no painel.' },
     { icon: Zap, title: 'Painel de faturamento', desc: 'Veja seu faturamento de hoje, da semana e do mês, com gráfico diário e histórico por produto.' },

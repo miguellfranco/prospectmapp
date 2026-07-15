@@ -4,10 +4,12 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { prisma } from '@/lib/db'
-import { geminiGenerate } from '@/lib/gemini'
+import { geminiGenerate, parseJsonLoose } from '@/lib/gemini'
+import { isValidEbookDesign, ebookDesignToMarkdown, type EbookDesign } from '@/lib/ebook-export'
 import { isRateLimited } from '@/lib/rate-limit'
 
-// Passo 1 do wizard — gera o e-book completo com IA e salva no produto da estrutura.
+// Passo 1 do wizard — gera o e-book DESIGNADO (estrutura página por página,
+// estilo Gamma) e salva o design + a versão texto no produto da estrutura.
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -22,58 +24,67 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   })
   if (!structure) return NextResponse.json({ error: 'Estrutura não encontrada' }, { status: 404 })
 
-  const prompt = `Você é um escritor profissional de infoprodutos digitais em português do Brasil.
+  const prompt = `Você é um escritor profissional de infoprodutos e designer editorial, escrevendo em português do Brasil.
 
-Escreva um E-BOOK COMPLETO (equivalente a 8-10 páginas) sobre o nicho "${structure.niche}"${structure.subNiche ? ` (sub-nicho: "${structure.subNiche}")` : ''}, resolvendo especificamente esta dor do leitor: "${structure.title}".
+Crie um E-BOOK COMPLETO, página por página, sobre o nicho "${structure.niche}"${structure.subNiche ? ` (sub-nicho: "${structure.subNiche}")` : ''}, resolvendo especificamente esta dor do leitor: "${structure.title}".
 
-ESTRUTURA OBRIGATÓRIA (em markdown):
-# [Título chamativo e específico do e-book — primeira linha do documento]
-
-## Introdução
-Por que os métodos tradicionais falham para esse problema; conexão emocional com o leitor que vive essa dor.
-
-## O Método em Fases
-Um plano dividido em 3-4 fases claras e nomeadas, explicando o que acontece em cada fase e por quê.
-
-## Passo a Passo Prático
-Instruções acionáveis, numeradas, que o leitor consegue aplicar hoje mesmo.
-
-## Plano de Ação Diário
-Checklist de ações diárias/semanais (lista com marcadores).
-
-## Bônus
-Conteúdo extra relevante para o nicho (receitas, exercícios, scripts, modelos ou tabelas — o que fizer sentido para "${structure.niche}").
-
-## Conclusão
-Fechamento motivacional com próximo passo claro.
+Responda APENAS com JSON válido neste formato exato:
+{
+  "title": "título chamativo e específico do e-book (máx 80 caracteres)",
+  "subtitle": "subtítulo de capa com a promessa concreta (1 frase)",
+  "pages": [
+    { "kind": "intro", "title": "...", "intro": "frase de abertura forte", "paragraphs": ["2-3 parágrafos: por que os métodos tradicionais falham + conexão emocional com quem vive essa dor"], "highlight": "frase de impacto para fechar a página" },
+    { "kind": "chapter", "title": "Fase 1 — nome da fase", "intro": "o que é esta fase em 1 frase", "paragraphs": ["2 parágrafos desenvolvendo a fase"], "bullets": ["3-4 pontos-chave práticos da fase"] },
+    { "kind": "chapter", "title": "Fase 2 — nome da fase", "intro": "...", "paragraphs": ["..."], "bullets": ["..."] },
+    { "kind": "chapter", "title": "Fase 3 — nome da fase", "intro": "...", "paragraphs": ["..."], "bullets": ["..."] },
+    { "kind": "steps", "title": "Passo a passo prático", "intro": "como aplicar hoje mesmo", "steps": [{ "title": "nome curto do passo", "text": "instrução acionável e específica" }] com 5-7 passos },
+    { "kind": "checklist", "title": "Seu plano de ação diário", "intro": "marque conforme for cumprindo", "items": ["6-9 ações diárias/semanais curtas e específicas"] },
+    { "kind": "bonus", "title": "Bônus — título do extra", "intro": "...", "paragraphs": ["1 parágrafo"], "bullets": ["4-6 itens do bônus: receitas, exercícios, scripts ou modelos — o que fizer sentido para o nicho"] },
+    { "kind": "conclusion", "title": "...", "paragraphs": ["2 parágrafos motivacionais com próximo passo claro"], "highlight": "frase final memorável" }
+  ]
+}
 
 REGRAS:
-- Escreva o conteúdo COMPLETO de cada seção, não apenas tópicos. Parágrafos desenvolvidos + listas onde ajudar.
-- Tom: próximo, encorajador e direto, como um mentor experiente.
-- Prometa apenas o que o conteúdo entrega — nada de garantias irreais ("perca 10kg em 1 semana"), nada de conselho médico/financeiro que exija profissional habilitado; quando relevante, recomende procurar um profissional.
-- Responda APENAS com o markdown do e-book, sem comentários antes ou depois.`
+- Conteúdo COMPLETO e detalhado em cada página — nada de placeholder.
+- Tom: mentor experiente, próximo e direto.
+- Prometa apenas o que o conteúdo entrega; sem garantias irreais; quando relevante, recomende procurar um profissional.
+- JSON puro, sem comentários nem texto fora do objeto.`
 
   try {
-    const content = await geminiGenerate(prompt, { maxOutputTokens: 8192, temperature: 0.85 })
+    // Até 2 tentativas caso a IA devolva JSON quebrado/incompleto
+    let design: EbookDesign | null = null
+    for (let attempt = 0; attempt < 2 && !design; attempt++) {
+      const raw = await geminiGenerate(prompt, { maxOutputTokens: 8192, temperature: 0.85, json: true })
+      try {
+        const parsed = parseJsonLoose<EbookDesign>(raw)
+        if (isValidEbookDesign(parsed)) design = parsed
+        else console.error('Design de e-book incompleto (tentativa', attempt + 1, '):', raw.slice(0, 300))
+      } catch {
+        console.error('Design de e-book com JSON inválido (tentativa', attempt + 1, '):', raw.slice(0, 300))
+      }
+    }
+    if (!design) {
+      return NextResponse.json({ error: 'A IA retornou um formato inesperado duas vezes seguidas. Tente gerar novamente.' }, { status: 502 })
+    }
 
-    // Primeira linha "# Título" vira o nome do produto
-    const firstHeading = content.match(/^#\s+(.+)$/m)?.[1]?.trim()
-    const productName = (firstHeading || structure.title).slice(0, 150)
+    const productName = design.title.slice(0, 150)
+    const designJson = JSON.stringify(design)
+    const content = ebookDesignToMarkdown(design)
 
     const product = structure.product
       ? await prisma.ebookProduct.update({
           where: { id: structure.product.id },
-          data: { name: productName, content },
+          data: { name: productName, content, designJson },
         })
       : await prisma.ebookProduct.create({
-          data: { structureId: structure.id, name: productName, content },
+          data: { structureId: structure.id, name: productName, content, designJson },
         })
 
     if (structure.status === 'rascunho') {
       await prisma.structure.update({ where: { id: structure.id }, data: { status: 'conteudo_gerado' } })
     }
 
-    return NextResponse.json({ product: { id: product.id, name: product.name, content: product.content } })
+    return NextResponse.json({ product: { id: product.id, name: product.name, designJson: product.designJson } })
   } catch (e: any) {
     console.error('Erro ao gerar e-book:', e)
     return NextResponse.json({ error: `Falha ao gerar o e-book: ${e?.message ?? 'erro na IA'}` }, { status: 502 })

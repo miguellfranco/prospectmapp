@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner'
 import { markdownToHtml } from '@/lib/markdown'
 import { buildLandingHtml } from '@/lib/landing-export'
+import { buildEbookHtml } from '@/lib/ebook-export'
 import { suggestPrice, LANDING_PRIMARY_COLORS, LANDING_SECONDARY_COLORS } from '@/lib/ebookai-data'
 import { WizardProgress, STRUCTURE_STATUS } from '@/components/lz/ebookai-ui'
 import { brl } from '@/components/lz/ui'
@@ -21,7 +22,7 @@ interface StructureDetail {
   title: string
   status: string
   product: {
-    id: string; name: string; content: string | null; price: number | null
+    id: string; name: string; content: string | null; designJson: string | null; price: number | null
     paymentIntegrationId: string | null; checkoutUrl: string | null
   } | null
   landingPage: {
@@ -145,21 +146,35 @@ function EstruturaWizard() {
     }
   }
 
-  function handleDownload() {
-    if (!structure?.product?.content) return
-    const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${structure.product.name}</title>
+  // HTML do e-book designado (capa + páginas estilo Gamma). Estruturas antigas
+  // sem designJson caem na versão texto simples.
+  function buildEbookPreviewHtml(): string | null {
+    const p = structure?.product
+    if (!p) return null
+    if (p.designJson) {
+      try { return buildEbookHtml(JSON.parse(p.designJson)) } catch { /* cai no texto */ }
+    }
+    if (p.content) {
+      return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${p.name}</title>
 <style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;line-height:1.7;color:#1a1a1a}
 h1,h2,h3{font-family:Arial,Helvetica,sans-serif;line-height:1.25}h1{font-size:2rem}h2{margin-top:2.2em;font-size:1.4rem}
 blockquote{border-left:4px solid #7c3aed;margin:1em 0;padding:.4em 1em;background:#f7f5ff}
-hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${markdownToHtml(structure.product.content)}
-<hr/><p style="color:#888;font-size:.8rem">Gerado com InfoBook</p></body></html>`
+hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${markdownToHtml(p.content)}</body></html>`
+    }
+    return null
+  }
+
+  function handleDownload() {
+    const p = structure?.product
+    const html = buildEbookPreviewHtml()
+    if (!p || !html) return
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `${structure.product.name.replace(/[^\w\d]+/g, '-').toLowerCase()}.html`
+    a.download = `${p.name.replace(/[^\w\d]+/g, '-').toLowerCase()}.html`
     a.click()
     URL.revokeObjectURL(a.href)
-    toast.success('E-book baixado! Abra no navegador e use "Imprimir → Salvar como PDF" para gerar o PDF.')
+    toast.success('E-book baixado! Abra no navegador e use "Imprimir → Salvar como PDF" para entregar em PDF.')
   }
 
   // HTML autossuficiente da página de vendas — o mesmo conteúdo é usado na
@@ -367,12 +382,12 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
             </div>
           )}
 
-          {!generating && structure.product?.content && (
+          {!generating && (structure.product?.designJson || structure.product?.content) && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h2 className="font-grotesk text-lg" style={{ color: 'var(--text-primary)' }}>{structure.product.name}</h2>
+                <h2 className="font-grotesk text-lg" style={{ color: 'var(--text-primary)' }}>{structure.product!.name}</h2>
                 <div className="flex gap-2">
-                  {editing ? (
+                  {!structure.product?.designJson && (editing ? (
                     <button onClick={handleSaveEdit} className="lz-btn-primary !px-4 !py-2 text-xs inline-flex items-center gap-1.5">
                       <Check size={14} /> Salvar edição
                     </button>
@@ -380,31 +395,50 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                     <button onClick={() => setEditing(true)} className="lz-btn-secondary !px-4 !py-2 text-xs inline-flex items-center gap-1.5">
                       <Pencil size={14} /> Editar
                     </button>
-                  )}
+                  ))}
                   <button onClick={handleGenerateEbook} className="lz-btn-secondary !px-4 !py-2 text-xs inline-flex items-center gap-1.5">
                     <RefreshCw size={14} /> Gerar novamente
                   </button>
-                  <button onClick={handleDownload} className="lz-btn-secondary !px-4 !py-2 text-xs inline-flex items-center gap-1.5">
-                    <Download size={14} /> Baixar
+                  <button onClick={handleDownload} className="lz-btn-primary !px-4 !py-2 text-xs inline-flex items-center gap-1.5">
+                    <Download size={14} /> Baixar e-book
                   </button>
                 </div>
               </div>
 
-              {editing ? (
+              {editing && !structure.product?.designJson ? (
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   className="lz-input min-h-[480px] font-jet text-xs leading-relaxed resize-y"
                 />
               ) : (
-                <div
-                  className="lz-card p-8 max-h-[560px] overflow-y-auto prose-invert"
-                  style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}
-                  dangerouslySetInnerHTML={{ __html: markdownToHtml(structure.product.content) }}
-                />
+                /* Livro designado renderizado dentro do app — mesmo HTML do download */
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--purple-border)', boxShadow: '0 10px 40px rgba(124,58,237,0.15)' }}>
+                  <div className="h-9 flex items-center px-3 gap-2" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-default)' }}>
+                    <div className="flex gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#ef4444cc' }} />
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#f59e0bcc' }} />
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#10b981cc' }} />
+                    </div>
+                    <span className="mx-auto px-3 py-0.5 rounded text-[10px] font-jet" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
+                      seu-ebook · página por página
+                    </span>
+                  </div>
+                  <iframe
+                    title="Pré-visualização do e-book"
+                    srcDoc={buildEbookPreviewHtml() ?? ''}
+                    sandbox="allow-scripts"
+                    className="w-full block"
+                    style={{ height: 620, border: 'none', background: '#edeaf6' }}
+                  />
+                </div>
               )}
 
-              <button onClick={() => setStep(1)} className="lz-btn-primary w-full mt-6 inline-flex items-center justify-center gap-2">
+              <p className="text-[11px] mt-3" style={{ color: 'var(--text-muted)' }}>
+                💡 Role dentro do livro para ver todas as páginas. Para entregar em PDF: baixe, abra no navegador e use Imprimir → Salvar como PDF (cada página do livro vira uma página do PDF).
+              </p>
+
+              <button onClick={() => setStep(1)} className="lz-btn-primary w-full mt-4 inline-flex items-center justify-center gap-2">
                 Continuar para o Produto <ArrowRight size={16} />
               </button>
             </>
