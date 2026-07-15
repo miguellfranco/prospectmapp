@@ -82,15 +82,23 @@ Responda APENAS com JSON válido neste formato exato:
 }`
 
   try {
-    const raw = await geminiGenerate(prompt, { maxOutputTokens: 4096, temperature: 0.8, json: true })
-    let copy: LandingCopy
-    try {
-      copy = parseJsonLoose<LandingCopy>(raw)
-    } catch {
-      return NextResponse.json({ error: 'A IA retornou um formato inesperado. Tente gerar novamente.' }, { status: 502 })
+    // Até 2 tentativas: se a IA devolver JSON quebrado/incompleto, gera de novo
+    let copy: LandingCopy | null = null
+    for (let attempt = 0; attempt < 2 && !copy; attempt++) {
+      const raw = await geminiGenerate(prompt, { maxOutputTokens: 8192, temperature: 0.8, json: true })
+      try {
+        const parsed = parseJsonLoose<LandingCopy>(raw)
+        if (parsed?.headline && Array.isArray(parsed?.bullets) && parsed.bullets.length > 0) {
+          copy = parsed
+        } else {
+          console.error('Copy incompleta da IA (tentativa', attempt + 1, '):', raw.slice(0, 300))
+        }
+      } catch {
+        console.error('Copy JSON inválido da IA (tentativa', attempt + 1, '):', raw.slice(0, 300))
+      }
     }
-    if (!copy?.headline || !Array.isArray(copy?.bullets)) {
-      return NextResponse.json({ error: 'A IA retornou uma copy incompleta. Tente gerar novamente.' }, { status: 502 })
+    if (!copy) {
+      return NextResponse.json({ error: 'A IA retornou um formato inesperado duas vezes seguidas. Tente gerar novamente.' }, { status: 502 })
     }
 
     const priceDisplay = `R$ ${product.price!.toFixed(2).replace('.', ',')}`

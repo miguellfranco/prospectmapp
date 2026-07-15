@@ -89,8 +89,17 @@ export async function geminiGenerate(prompt: string, opts: GeminiOptions = {}): 
   throw new Error(`Nenhum modelo Gemini disponível para esta conta. Último erro: ${lastError}`)
 }
 
-// Extrai JSON de uma resposta que pode vir embrulhada em ```json ... ```
+// Extrai JSON de uma resposta que pode vir embrulhada em ```json ... ``` ou
+// com texto solto antes/depois do objeto.
 export function parseJsonLoose<T = any>(raw: string): T {
   const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
-  return JSON.parse(cleaned)
+  try {
+    return JSON.parse(cleaned)
+  } catch { /* tenta recortar do primeiro { ao último } */ }
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+  if (start >= 0 && end > start) {
+    return JSON.parse(cleaned.slice(start, end + 1))
+  }
+  throw new Error('resposta sem JSON válido')
 }
