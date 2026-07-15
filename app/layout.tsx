@@ -13,14 +13,14 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
-  title: 'EbookAI — Crie e venda infoprodutos completos com IA',
+  title: 'InfoBook — Crie e venda infoprodutos completos com IA',
   description: 'Gere um e-book, cadastre o produto, publique uma página de vendas e descubra onde divulgar — tudo em 4 passos com inteligência artificial.',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'EbookAI — Crie e venda infoprodutos completos com IA',
+    title: 'InfoBook — Crie e venda infoprodutos completos com IA',
     description: 'E-book, produto, página de vendas e divulgação — seu infoproduto pronto em 4 passos com IA.',
     images: ['/og-image.png'],
     type: 'website',

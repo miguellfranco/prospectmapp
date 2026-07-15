@@ -148,7 +148,7 @@ function EstruturaWizard() {
 h1,h2,h3{font-family:Arial,Helvetica,sans-serif;line-height:1.25}h1{font-size:2rem}h2{margin-top:2.2em;font-size:1.4rem}
 blockquote{border-left:4px solid #7c3aed;margin:1em 0;padding:.4em 1em;background:#f7f5ff}
 hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${markdownToHtml(structure.product.content)}
-<hr/><p style="color:#888;font-size:.8rem">Gerado com EbookAI</p></body></html>`
+<hr/><p style="color:#888;font-size:.8rem">Gerado com InfoBook</p></body></html>`
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)

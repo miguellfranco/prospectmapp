@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { prisma } from '@/lib/db'
 
-// Métricas do painel EbookAI: faturamento real (vendas recebidas via webhook
+// Métricas do painel InfoBook: faturamento real (vendas recebidas via webhook
 // dos gateways) + estruturas. Sem vendas registradas, os números ficam em
 // zero — estado vazio honesto, nada de dados fabricados.
 export async function GET() {
@@ -17,7 +17,7 @@ export async function GET() {
     const start7d = new Date(startOfToday.getTime() - 6 * 24 * 60 * 60 * 1000)
     const start30d = new Date(startOfToday.getTime() - 29 * 24 * 60 * 60 * 1000)
 
-    const [sales30d, structures] = await Promise.all([
+    const [sales30d, structures, structuresTotal, ebooksGenerated, landingsPublished, integrationsConnected, salesAllTime] = await Promise.all([
       prisma.infoproductSale.findMany({
         where: { userId: user.id, paidAt: { gte: start30d } },
         select: { amount: true, paidAt: true, gateway: true },
@@ -31,6 +31,15 @@ export async function GET() {
           product: { select: { name: true, price: true, checkoutUrl: true } },
           landingPage: { select: { slug: true } },
         },
+      }),
+      prisma.structure.count({ where: { userId: user.id } }),
+      prisma.ebookProduct.count({ where: { structure: { userId: user.id }, content: { not: null } } }),
+      prisma.landingPage.count({ where: { structure: { userId: user.id }, publishedAt: { not: null } } }),
+      prisma.paymentIntegration.count({ where: { userId: user.id, status: 'conectado' } }),
+      prisma.infoproductSale.aggregate({
+        where: { userId: user.id },
+        _sum: { amount: true },
+        _count: true,
       }),
     ])
 
@@ -60,10 +69,18 @@ export async function GET() {
     const daily = Object.entries(dailyMap).map(([date, total]) => ({ date, total }))
 
     return NextResponse.json({
-      revenue: { today, last7, last30 },
+      revenue: { today, last7, last30, allTime: salesAllTime._sum.amount ?? 0 },
       byGateway,
       daily,
       salesCount30d: sales30d.length,
+      salesCountAllTime: salesAllTime._count,
+      counts: {
+        structures: structuresTotal,
+        ebooks: ebooksGenerated,
+        landings: landingsPublished,
+        integrations: integrationsConnected,
+      },
+      userName: user.name ?? null,
       structures: structures.map((s) => ({
         id: s.id,
         niche: s.niche,

@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 
-// Landing page pública gerada pelo EbookAI (Passo 3 do wizard).
+// Landing page pública gerada pelo InfoBook (Passo 3 do wizard).
 // Renderizada no servidor com as cores escolhidas pelo usuário.
 
 interface LandingCopy {
@@ -217,7 +217,7 @@ export default async function PublicLandingPage({ params }: { params: { slug: st
 
       <footer style={{ padding: '28px 24px', borderTop: `1px solid ${cardBorder}`, textAlign: 'center' }}>
         <p style={{ fontSize: 12, color: textSoft, opacity: 0.7 }}>
-          Página criada com EbookAI · Os resultados podem variar de pessoa para pessoa.
+          Página criada com InfoBook · Os resultados podem variar de pessoa para pessoa.
         </p>
       </footer>
     </div>

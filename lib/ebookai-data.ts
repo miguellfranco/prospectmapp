@@ -1,4 +1,4 @@
-// Catálogo de nichos e sub-nichos (dores principais) do EbookAI.
+// Catálogo de nichos e sub-nichos (dores principais) do InfoBook.
 // O usuário também pode digitar um nicho/dor personalizada no wizard.
 
 export interface Niche {

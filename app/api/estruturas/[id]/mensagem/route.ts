@@ -54,7 +54,7 @@ REGRAS OBRIGATÓRIAS:
 - Responda APENAS com o texto pronto para copiar, sem aspas nem comentários.`
 
   try {
-    const text = await geminiGenerate(prompt, { model: 'gemini-2.5-flash-lite', maxOutputTokens: 512, temperature: 0.9 })
+    const text = await geminiGenerate(prompt, { fast: true, maxOutputTokens: 512, temperature: 0.9 })
 
     const message = await prisma.outreachMessage.create({
       data: { structureId: structure.id, generatedText: text.trim() },

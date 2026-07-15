@@ -75,7 +75,7 @@ export function SignupForm() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Zap size={28} style={{ color: 'var(--purple-core)' }} fill="var(--purple-core)" />
-            <span className="font-grotesk font-bold text-2xl text-glow" style={{ color: 'var(--text-primary)' }}>EbookAI</span>
+            <span className="font-grotesk font-bold text-2xl text-glow" style={{ color: 'var(--text-primary)' }}>InfoBook</span>
           </div>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Crie sua conta e lance seu primeiro infoproduto hoje mesmo.</p>
         </div>

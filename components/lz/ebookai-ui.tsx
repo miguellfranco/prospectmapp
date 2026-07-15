@@ -1,6 +1,6 @@
 'use client'
 
-// Componentes compartilhados do EbookAI (painel, estruturas, wizard)
+// Componentes compartilhados do InfoBook (painel, estruturas, wizard)
 
 export const STRUCTURE_STATUS: Record<string, { label: string; cls: string; step: number }> = {
   rascunho: { label: 'RASCUNHO', cls: 'lz-badge-cold', step: 0 },

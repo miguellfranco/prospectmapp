@@ -38,7 +38,7 @@ Responda APENAS com JSON válido:
 { "keywords": ["6 a 8 termos curtos de busca que pessoas usam para nomear grupos desse nicho"] }`
 
   try {
-    const raw = await geminiGenerate(prompt, { model: 'gemini-2.5-flash-lite', maxOutputTokens: 1024, temperature: 0.7, json: true })
+    const raw = await geminiGenerate(prompt, { fast: true, maxOutputTokens: 1024, temperature: 0.7, json: true })
     let keywords: string[] = []
     try {
       keywords = parseJsonLoose<{ keywords: string[] }>(raw)?.keywords ?? []

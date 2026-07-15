@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { PixCheckoutModal } from '@/components/lz/pix-checkout-modal'
 
-export default function EbookAILanding() {
+export default function InfoBookLanding() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
@@ -56,7 +56,7 @@ export default function EbookAILanding() {
     },
     {
       q: 'Como eu recebo o dinheiro das vendas?',
-      a: 'As vendas acontecem no seu gateway (Kiwify ou Hotmart), com o dinheiro caindo direto na sua conta. O EbookAI não fica com nenhuma comissão sobre as suas vendas.',
+      a: 'As vendas acontecem no seu gateway (Kiwify ou Hotmart), com o dinheiro caindo direto na sua conta. O InfoBook não fica com nenhuma comissão sobre as suas vendas.',
     },
     {
       q: 'A página de vendas fica hospedada onde?',
@@ -82,7 +82,7 @@ export default function EbookAILanding() {
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-violet-950/50 border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.25)] text-violet-400">
               <BookOpen size={22} />
             </div>
-            <span className="font-bold text-2xl text-white tracking-tight font-grotesk">EbookAI</span>
+            <span className="font-bold text-2xl text-white tracking-tight font-grotesk">InfoBook</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
@@ -188,7 +188,7 @@ export default function EbookAILanding() {
                   </div>
                   <div className="mx-auto px-4 py-1 rounded bg-white/5 text-[10px] text-zinc-500 font-mono flex items-center gap-2">
                     <ShieldCheck size={12} className="text-violet-500" />
-                    ebookai — nova estrutura
+                    infobook — nova estrutura
                   </div>
                 </div>
 
@@ -294,7 +294,7 @@ export default function EbookAILanding() {
           <div className="max-w-5xl mx-auto px-6 text-center">
             <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
               {[
-                { icon: CreditCard, text: 'Você recebe 100% das suas vendas — sem comissão do EbookAI' },
+                { icon: CreditCard, text: 'Você recebe 100% das suas vendas — sem comissão do InfoBook' },
                 { icon: Zap, text: 'Acesso liberado na hora, após a confirmação do pagamento' },
                 { icon: Headset, text: 'Suporte direto pelo WhatsApp' },
               ].map((t, i) => (
@@ -328,7 +328,7 @@ export default function EbookAILanding() {
               <p className="text-zinc-400 max-w-xl mx-auto">Sem taxas sobre as suas vendas. Cancele quando quiser.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-5xl mx-auto">
 
               {/* PLANO MENSAL */}
               <motion.div
@@ -362,6 +362,45 @@ export default function EbookAILanding() {
 
                 <button onClick={() => setCheckoutPlan('mensal')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
                   ASSINAR MENSAL
+                </button>
+              </motion.div>
+
+              {/* PLANO TRIMESTRAL */}
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.05 }}
+                className="rounded-3xl border border-white/10 bg-[#07070f] p-8 flex flex-col hover:border-violet-500/30 hover:-translate-y-1 transition-all relative">
+                <div className="mb-3 flex">
+                  <span className="px-3 py-1 rounded-full bg-violet-600/20 border border-violet-500/30 text-violet-300 text-[10px] font-bold uppercase tracking-wider">
+                    Economize 32%
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Trimestral</h3>
+                <p className="text-xs text-zinc-500 mb-6">3 meses para lançar e escalar seus produtos.</p>
+                <div className="text-xs text-zinc-500 line-through mb-1">De R$ 291,00</div>
+                <div className="flex items-baseline gap-1 mb-8">
+                  <span className="text-zinc-500 font-semibold">R$</span>
+                  <span className="text-5xl font-black text-white font-grotesk">197</span>
+                  <span className="text-zinc-500 font-semibold">/trimestre</span>
+                </div>
+
+                <ul className="flex-1 space-y-4 mb-10">
+                  {[
+                    'Tudo do plano Mensal',
+                    '3 meses de acesso completo',
+                    'Melhor preço para validar vários nichos',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-3 text-sm text-zinc-400">
+                      <CheckCircle2 size={16} className="text-violet-500 shrink-0 mt-0.5" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button onClick={() => setCheckoutPlan('trimestral')} className="block w-full py-3.5 rounded-xl border border-violet-500/40 bg-violet-950/20 hover:bg-violet-950/40 text-center font-bold text-white transition-colors">
+                  ASSINAR TRIMESTRAL
                 </button>
               </motion.div>
 
@@ -472,7 +511,7 @@ export default function EbookAILanding() {
             Criar meu produto agora
           </Link>
           <p className="text-xs text-zinc-600">
-            © {new Date().getFullYear()} EbookAI. Todos os direitos reservados.
+            © {new Date().getFullYear()} InfoBook. Todos os direitos reservados.
           </p>
         </div>
       </footer>

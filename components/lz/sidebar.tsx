@@ -40,7 +40,7 @@ export function Sidebar() {
       >
         <div className="px-6 py-6 flex items-center gap-2">
           <BookOpen size={22} style={{ color: 'var(--purple-core)' }} />
-          <span className="font-grotesk font-bold text-xl text-glow" style={{ color: 'var(--text-primary)' }}>EbookAI</span>
+          <span className="font-grotesk font-bold text-xl text-glow" style={{ color: 'var(--text-primary)' }}>InfoBook</span>
         </div>
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto scrollbar-none">

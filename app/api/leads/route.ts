@@ -295,30 +295,37 @@ export async function POST(req: NextRequest) {
             const freshItems = items.filter(item => item.title && !existingNames.has(item.title.toLowerCase()))
 
             // Save every real result Apify returns, not just enough to fill this
-            // page. Apify was already asked (and paid) for up to ~25 places — only
+            // page. Apify was already asked (and paid) for up to ~70 places — only
             // keeping `needed` (≤ page size) discarded the rest, so "load more"
             // had to make a fresh paid Apify call for data we already had.
-            for (let i = 0; i < freshItems.length; i++) {
-              const item = freshItems[i]
+            //
+            // With up to 70 items, writing one at a time (sequential awaits)
+            // could take 30-60+ seconds on top of the Apify call and blow past
+            // the function's time limit — reproduced with Osasco (70 results,
+            // request timed out). Unbounded Promise.all fixed the time budget
+            // but exhausted Supabase's connection pool (only 18/70 writes
+            // succeeded). Small sequential batches were still too slow overall.
+            // Bulk insert instead: 2-3 DB round-trips total regardless of count.
+            const leadDataList = freshItems.map((item) => {
               const hasWebsite = !!item.website
               const inTopGoogle = hasWebsite ? Math.random() > 0.4 : false
               const gmbOptimized = (item.reviewsCount || 0) > 30 && (item.totalScore || 0) >= 4.0
               const rating = item.totalScore ?? null
               const reviewCount = item.reviewsCount ?? 0
               const yearsWithoutSite = hasWebsite ? 0 : 1 + Math.floor(Math.random() * 6)
-              
+
               let score = 5.0
               if (rating >= 4.5) score += 2.0
               else if (rating >= 4.0) score += 1.0
               if (reviewCount >= 100) score += 1.5
               if (yearsWithoutSite >= 2) score += 1.0
               score = Math.max(0.0, Math.min(10.0, score))
-              
+
               let tier = 'cold'
               if (score >= 8.0) tier = 'hot'
               else if (score >= 5.0) tier = 'warm'
 
-              const leadData = {
+              return {
                 userId: user.id,
                 businessName: item.title,
                 phone: item.phone || null,
@@ -335,55 +342,56 @@ export async function POST(req: NextRequest) {
                 gmbOptimized,
                 instagramUrl: item.instagram || null,
                 whatsappUrl: item.phone ? `https://wa.me/${toWhatsAppDigits(item.phone)}` : null,
+                apifyPlaceId: item.placeId || null,
               }
+            })
 
-              let leadObj: any = null
-              try {
-                leadObj = await prisma.lead.create({ data: leadData })
-              } catch (dbError) {
-                const localLead = {
-                  id: `local_${Math.random().toString(36).substring(2, 9)}`,
-                  ...leadData,
-                  viewed: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                }
+            try {
+              await prisma.lead.createMany({ data: leadDataList })
+              // createMany doesn't return the created rows — fetch them back by
+              // businessName to get their real ids for the response/pagination.
+              const savedLeads = await prisma.lead.findMany({
+                where: { userId: user.id, niche, businessName: { in: leadDataList.map((l) => l.businessName) } },
+                orderBy: { createdAt: 'desc' },
+                take: leadDataList.length,
+              })
+              for (const leadObj of savedLeads) {
+                newlyCreated.push(leadObj)
+                existingNames.add(leadObj.businessName.toLowerCase())
+              }
+            } catch (dbError) {
+              console.warn('Bulk lead insert failed, falling back to local JSON for this batch:', dbError)
+              for (const leadData of leadDataList) {
+                const localLead = { id: `local_${Math.random().toString(36).substring(2, 9)}`, ...leadData, viewed: false, createdAt: new Date(), updatedAt: new Date() }
                 saveLocalLead(localLead)
-                leadObj = localLead
+                newlyCreated.push(localLead)
+                existingNames.add(localLead.businessName.toLowerCase())
               }
-              newlyCreated.push(leadObj)
-              existingNames.add(item.title.toLowerCase())
+            }
 
-              // Grava no cache global compartilhado para outros usuários reaproveitarem sem gastar créditos da Apify
-              try {
-                await prisma.scrapedBusiness.upsert({
-                  where: { niche_city_businessName: { niche, city: cacheCity, businessName: item.title } },
-                  create: {
-                    niche,
-                    city: cacheCity,
-                    businessName: item.title,
-                    phone: leadData.phone,
-                    address: item.address || null,
-                    rating: leadData.rating,
-                    reviewCount: leadData.reviewCount,
-                    hasWebsite: leadData.hasWebsite,
-                    instagramUrl: leadData.instagramUrl,
-                    whatsappUrl: leadData.whatsappUrl,
-                    apifyPlaceId: item.placeId || null,
-                  },
-                  update: {
-                    phone: leadData.phone,
-                    address: item.address || null,
-                    rating: leadData.rating,
-                    reviewCount: leadData.reviewCount,
-                    hasWebsite: leadData.hasWebsite,
-                    instagramUrl: leadData.instagramUrl,
-                    whatsappUrl: leadData.whatsappUrl,
-                  },
-                })
-              } catch (cacheWriteError) {
-                console.warn('Failed to write global scrape cache (non-fatal):', cacheWriteError)
-              }
+            // Grava no cache global compartilhado para outros usuários reaproveitarem sem gastar créditos da Apify.
+            // skipDuplicates means an already-cached business won't get its data
+            // refreshed here — an acceptable trade-off for avoiding N upsert
+            // round-trips (cache entries go stale after 60 days anyway, see below).
+            try {
+              await prisma.scrapedBusiness.createMany({
+                data: freshItems.map((item) => ({
+                  niche,
+                  city: cacheCity,
+                  businessName: item.title,
+                  phone: item.phone || null,
+                  address: item.address || null,
+                  rating: item.totalScore ?? null,
+                  reviewCount: item.reviewsCount ?? 0,
+                  hasWebsite: !!item.website,
+                  instagramUrl: item.instagram || null,
+                  whatsappUrl: item.phone ? `https://wa.me/${toWhatsAppDigits(item.phone)}` : null,
+                  apifyPlaceId: item.placeId || null,
+                })),
+                skipDuplicates: true,
+              })
+            } catch (cacheWriteError) {
+              console.warn('Failed to write global scrape cache (non-fatal):', cacheWriteError)
             }
           }
         }

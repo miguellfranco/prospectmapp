@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const localId = `pix_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`
     const charge = await createPixCharge({
       amountCents,
-      description: `EbookAI — Plano ${PLAN_LABELS[plan] ?? plan}`,
+      description: `InfoBook — Plano ${PLAN_LABELS[plan] ?? plan}`,
       expiresInSeconds: EXPIRES_IN_SECONDS,
       externalId: localId,
       metadata: { email, phone: phoneDigits, plan },
