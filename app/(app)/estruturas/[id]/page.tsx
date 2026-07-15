@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { markdownToHtml } from '@/lib/markdown'
+import { buildLandingHtml } from '@/lib/landing-export'
 import { suggestPrice, LANDING_PRIMARY_COLORS, LANDING_SECONDARY_COLORS } from '@/lib/ebookai-data'
 import { WizardProgress, STRUCTURE_STATUS } from '@/components/lz/ebookai-ui'
 import { brl } from '@/components/lz/ui'
@@ -23,7 +24,10 @@ interface StructureDetail {
     id: string; name: string; content: string | null; price: number | null
     paymentIntegrationId: string | null; checkoutUrl: string | null
   } | null
-  landingPage: { slug: string; primaryColor: string; secondaryColor: string; publishedAt: string | null } | null
+  landingPage: {
+    slug: string; primaryColor: string; secondaryColor: string; publishedAt: string | null
+    headline: string; copyJson: string; priceDisplay: string | null
+  } | null
   outreachGroups: { id: string; platform: string; groupName: string; groupUrl: string; country: string }[]
   outreachMessages: { id: string; generatedText: string; createdAt: string }[]
 }
@@ -156,6 +160,30 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
     a.click()
     URL.revokeObjectURL(a.href)
     toast.success('E-book baixado! Abra no navegador e use "Imprimir → Salvar como PDF" para gerar o PDF.')
+  }
+
+  // Baixa a página de vendas como index.html autossuficiente — o usuário
+  // hospeda onde quiser (Netlify Drop, Vercel...), sem depender da gente.
+  function handleDownloadLanding() {
+    const lp = structure?.landingPage
+    if (!lp) return
+    let copy: any = { headline: lp.headline }
+    try { copy = { ...copy, ...JSON.parse(lp.copyJson) } } catch { /* segue só com headline */ }
+    const html = buildLandingHtml({
+      productName: structure!.product?.name ?? structure!.title,
+      priceDisplay: lp.priceDisplay,
+      checkoutUrl: structure!.product?.checkoutUrl ?? null,
+      primaryColor: lp.primaryColor,
+      secondaryColor: lp.secondaryColor,
+      copy,
+    })
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'index.html'
+    a.click()
+    URL.revokeObjectURL(a.href)
+    toast.success('Página baixada como index.html! Coloque numa pasta e arraste em netlify.com/drop para publicar grátis.')
   }
 
   async function handleSaveProduct() {
@@ -555,18 +583,31 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
               </button>
 
               {landingUrl && (
-                <div className="p-4 rounded-xl flex items-center justify-between gap-3"
-                  style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)' }}>
-                  <span className="text-xs font-jet truncate" style={{ color: 'var(--success)' }}>{landingUrl}</span>
-                  <div className="flex gap-2 shrink-0">
-                    <button onClick={() => copyText(landingUrl, 'Link copiado!')} className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
-                      <Copy size={15} />
-                    </button>
-                    <a href={landingUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
-                      <ExternalLink size={15} />
-                    </a>
+                <>
+                  <button onClick={handleDownloadLanding} className="lz-btn-secondary w-full inline-flex items-center justify-center gap-2 text-sm">
+                    <Download size={15} /> Baixar página (index.html) para hospedar onde quiser
+                  </button>
+                  <p className="text-[11px] -mt-2" style={{ color: 'var(--text-muted)' }}>
+                    A página é 100% sua: coloque o <code>index.html</code> numa pasta e arraste em{' '}
+                    <a href="https://app.netlify.com/drop" target="_blank" rel="noreferrer" className="underline" style={{ color: 'var(--purple-soft)' }}>netlify.com/drop</a>
+                    {' '}— publicação grátis com URL própria em menos de 1 minuto.
+                  </p>
+                  <div className="p-4 rounded-xl flex items-center justify-between gap-3"
+                    style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>Pré-visualização hospedada</p>
+                      <span className="text-xs font-jet truncate block" style={{ color: 'var(--success)' }}>{landingUrl}</span>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => copyText(landingUrl, 'Link copiado!')} className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
+                        <Copy size={15} />
+                      </button>
+                      <a href={landingUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
+                        <ExternalLink size={15} />
+                      </a>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}
@@ -726,6 +767,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
               </div>
               {landingUrl && (
                 <div className="flex gap-2 shrink-0">
+                  <button onClick={handleDownloadLanding} title="Baixar index.html para hospedar onde quiser" className="lz-btn-secondary !px-3 !py-2 text-xs"><Download size={13} /></button>
                   <button onClick={() => copyText(landingUrl, 'Link copiado!')} className="lz-btn-secondary !px-3 !py-2 text-xs"><Copy size={13} /></button>
                   <a href={landingUrl} target="_blank" rel="noreferrer" className="lz-btn-secondary !px-3 !py-2 text-xs"><ExternalLink size={13} /></a>
                 </div>

@@ -30,8 +30,8 @@ export default function InfoBookLanding() {
     },
     {
       step: 'PASSO — 3',
-      title: 'Página de vendas publicada',
-      desc: 'A IA escreve a copy persuasiva e publica uma landing page com URL própria, nas cores que você escolher.',
+      title: 'Página de vendas pronta',
+      desc: 'A IA escreve a copy persuasiva e entrega sua landing page pronta, nas suas cores — você publica grátis com 1 clique e a página é 100% sua.',
       icon: Globe,
     },
     {
@@ -44,7 +44,7 @@ export default function InfoBookLanding() {
 
   const features = [
     { icon: Wand2, title: 'E-books ilimitados', desc: 'Gere quantos e-books quiser, em mais de 20 nichos validados ou em qualquer nicho que você digitar.' },
-    { icon: Globe, title: 'Landing pages com URL própria', desc: 'Cada produto ganha uma página de vendas publicada na hora, com copy de conversão feita por IA.' },
+    { icon: Globe, title: 'Landing page 100% sua', desc: 'Baixe a página pronta com copy de conversão feita por IA e publique grátis onde quiser — com pré-visualização instantânea.' },
     { icon: CreditCard, title: 'Integração com gateways', desc: 'Conecte Kiwify ou Hotmart e acompanhe as vendas dos seus produtos direto no painel.' },
     { icon: Zap, title: 'Painel de faturamento', desc: 'Veja seu faturamento de hoje, da semana e do mês, com gráfico diário e histórico por produto.' },
   ]
@@ -60,7 +60,7 @@ export default function InfoBookLanding() {
     },
     {
       q: 'A página de vendas fica hospedada onde?',
-      a: 'Aqui mesmo. Cada estrutura gera uma página publicada com URL própria, pronta para compartilhar — sem precisar contratar hospedagem ou domínio.',
+      a: 'Onde você quiser — a página é sua. Você baixa o arquivo pronto e publica grátis em 1 minuto em serviços como Netlify ou Vercel (mostramos como). Também geramos uma pré-visualização instantânea para você conferir o resultado antes de publicar.',
     },
     {
       q: 'Posso editar o e-book que a IA gerar?',
