@@ -162,14 +162,15 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
     toast.success('E-book baixado! Abra no navegador e use "Imprimir → Salvar como PDF" para gerar o PDF.')
   }
 
-  // Baixa a página de vendas como index.html autossuficiente — o usuário
-  // hospeda onde quiser (Netlify Drop, Vercel...), sem depender da gente.
-  function handleDownloadLanding() {
+  // HTML autossuficiente da página de vendas — o mesmo conteúdo é usado na
+  // pré-visualização embutida (iframe) e no download para o usuário hospedar
+  // onde quiser (Netlify Drop, Vercel...), sem depender da gente.
+  function buildExportHtml(): string | null {
     const lp = structure?.landingPage
-    if (!lp) return
+    if (!lp) return null
     let copy: any = { headline: lp.headline }
     try { copy = { ...copy, ...JSON.parse(lp.copyJson) } } catch { /* segue só com headline */ }
-    const html = buildLandingHtml({
+    return buildLandingHtml({
       productName: structure!.product?.name ?? structure!.title,
       priceDisplay: lp.priceDisplay,
       checkoutUrl: structure!.product?.checkoutUrl ?? null,
@@ -177,6 +178,11 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
       secondaryColor: lp.secondaryColor,
       copy,
     })
+  }
+
+  function handleDownloadLanding() {
+    const html = buildExportHtml()
+    if (!html) return
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
@@ -503,7 +509,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
 
       {/* ============ PASSO 3 — PÁGINA DE VENDAS ============ */}
       {step === 2 && (
-        <div className="max-w-xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4"
               style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid var(--purple-border)' }}>
@@ -584,7 +590,28 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
 
               {landingUrl && (
                 <>
-                  <button onClick={handleDownloadLanding} className="lz-btn-secondary w-full inline-flex items-center justify-center gap-2 text-sm">
+                  {/* Pré-visualização embutida — renderiza exatamente o HTML que o botão baixa */}
+                  <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--purple-border)', boxShadow: '0 10px 40px rgba(124,58,237,0.15)' }}>
+                    <div className="h-9 flex items-center px-3 gap-2" style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-default)' }}>
+                      <div className="flex gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#ef4444cc' }} />
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#f59e0bcc' }} />
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#10b981cc' }} />
+                      </div>
+                      <span className="mx-auto px-3 py-0.5 rounded text-[10px] font-jet" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
+                        sua-pagina-de-vendas · index.html
+                      </span>
+                    </div>
+                    <iframe
+                      title="Pré-visualização da página de vendas"
+                      srcDoc={buildExportHtml() ?? ''}
+                      sandbox=""
+                      className="w-full block"
+                      style={{ height: 480, border: 'none', background: structure.landingPage?.secondaryColor ?? '#05050b' }}
+                    />
+                  </div>
+
+                  <button onClick={handleDownloadLanding} className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm">
                     <Download size={15} /> Baixar página (index.html) para hospedar onde quiser
                   </button>
                   <p className="text-[11px] -mt-2" style={{ color: 'var(--text-muted)' }}>
