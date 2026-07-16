@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
   try {
     if (action === 'seed-sales') {
-      const count = Math.min(300, Math.max(1, Number(body?.count) || 40))
+      const count = Math.min(30000, Math.max(1, Number(body?.count) || 40))
       const days = Math.min(30, Math.max(1, Number(body?.days) || 30))
       const avg = Math.min(500, Math.max(5, Number(body?.avgAmount) || 29.9))
 
@@ -99,7 +99,10 @@ export async function POST(req: NextRequest) {
           paidAt,
         }
       })
-      await prisma.infoproductSale.createMany({ data })
+      // Em lotes de 5000 para não estourar o limite de payload do Postgres
+      for (let i = 0; i < data.length; i += 5000) {
+        await prisma.infoproductSale.createMany({ data: data.slice(i, i + 5000) })
+      }
       return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id) })
     }
 
