@@ -59,6 +59,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         data: { name: body.productName.trim().slice(0, 150) },
       })
     }
+    // Cor de destaque do e-book (capa, capítulos, cards)
+    if (typeof body?.ebookAccentColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(body.ebookAccentColor) && structure.product) {
+      await prisma.ebookProduct.update({
+        where: { id: structure.product.id },
+        data: { accentColor: body.ebookAccentColor },
+      })
+    }
 
     return NextResponse.json({ ok: true })
   } catch (e) {

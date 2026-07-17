@@ -51,30 +51,29 @@ Responda APENAS com JSON válido:
     // Regenerar substitui a lista anterior (mesmo país ou não — mantém a tela limpa)
     await prisma.outreachGroup.deleteMany({ where: { structureId: structure.id } })
 
+    // Busca do Google restrita aos domínios de grupos: cada resultado é um
+    // grupo/convite REAL e clicável (funciona sem login no Facebook).
     const groups = await prisma.$transaction(
-      keywords.flatMap((kw) => {
-        const q = encodeURIComponent(kw)
-        return [
-          prisma.outreachGroup.create({
-            data: {
-              structureId: structure.id,
-              platform: 'facebook',
-              groupName: `Grupos de Facebook: "${kw}"`,
-              groupUrl: `https://www.facebook.com/search/groups/?q=${q}`,
-              country,
-            },
-          }),
-          prisma.outreachGroup.create({
-            data: {
-              structureId: structure.id,
-              platform: 'whatsapp',
-              groupName: `Grupos de WhatsApp: "${kw}"`,
-              groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`"chat.whatsapp.com" ${kw}`)}`,
-              country,
-            },
-          }),
-        ]
-      })
+      keywords.flatMap((kw) => [
+        prisma.outreachGroup.create({
+          data: {
+            structureId: structure.id,
+            platform: 'facebook',
+            groupName: `Grupos de Facebook sobre "${kw}"`,
+            groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${kw}`)}`,
+            country,
+          },
+        }),
+        prisma.outreachGroup.create({
+          data: {
+            structureId: structure.id,
+            platform: 'whatsapp',
+            groupName: `Grupos de WhatsApp sobre "${kw}"`,
+            groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`"chat.whatsapp.com" grupo ${kw}`)}`,
+            country,
+          },
+        }),
+      ])
     )
 
     return NextResponse.json({ groups })

@@ -22,7 +22,7 @@ interface StructureDetail {
   title: string
   status: string
   product: {
-    id: string; name: string; content: string | null; designJson: string | null; price: number | null
+    id: string; name: string; content: string | null; designJson: string | null; accentColor: string; price: number | null
     paymentIntegrationId: string | null; checkoutUrl: string | null
   } | null
   landingPage: {
@@ -59,6 +59,7 @@ function EstruturaWizard() {
   const [generating, setGenerating] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  const [ebookAccent, setEbookAccent] = useState('#7c3aed')
   const autoStarted = useRef(false)
 
   // Passo 2 — produto
@@ -89,6 +90,7 @@ function EstruturaWizard() {
     const s: StructureDetail = d.structure
     setStructure(s)
     setDraft(s.product?.content ?? '')
+    setEbookAccent(s.product?.accentColor ?? '#7c3aed')
     if (s.product?.price != null) setPriceInput(s.product.price.toFixed(2).replace('.', ','))
     else setPriceInput(suggestPrice(s.niche).toFixed(2).replace('.', ','))
     if (s.product?.paymentIntegrationId) setSelectedIntegration(s.product.paymentIntegrationId)
@@ -152,7 +154,7 @@ function EstruturaWizard() {
     const p = structure?.product
     if (!p) return null
     if (p.designJson) {
-      try { return buildEbookHtml(JSON.parse(p.designJson)) } catch { /* cai no texto */ }
+      try { return buildEbookHtml(JSON.parse(p.designJson), ebookAccent) } catch { /* cai no texto */ }
     }
     if (p.content) {
       return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${p.name}</title>
@@ -162,6 +164,17 @@ blockquote{border-left:4px solid #7c3aed;margin:1em 0;padding:.4em 1em;backgroun
 hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${markdownToHtml(p.content)}</body></html>`
     }
     return null
+  }
+
+  // Troca a cor de destaque do e-book: preview atualiza na hora e a escolha
+  // fica salva para o download e futuras visitas.
+  function handleEbookColor(color: string) {
+    setEbookAccent(color)
+    fetch(`/api/estruturas/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ebookAccentColor: color }),
+    }).catch(() => toast.error('Não foi possível salvar a cor.'))
   }
 
   function handleDownload() {
@@ -404,6 +417,23 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                   </button>
                 </div>
               </div>
+
+              {structure.product?.designJson && (
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                    ◎ Cor do e-book
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {LANDING_PRIMARY_COLORS.map((c) => (
+                      <button
+                        key={c} onClick={() => handleEbookColor(c)} title={c}
+                        className="w-7 h-7 rounded-full transition-transform hover:scale-110"
+                        style={{ background: c, border: ebookAccent === c ? '3px solid #fff' : '2px solid rgba(255,255,255,0.15)' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {editing && !structure.product?.designJson ? (
                 <textarea
@@ -734,7 +764,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                   </a>
                 ))}
                 <p className="text-[11px] pt-1" style={{ color: 'var(--text-muted)' }}>
-                  Os links abrem a busca oficial de cada plataforma — escolha os grupos reais que combinam com seu público e participe respeitando as regras de cada comunidade.
+                  Cada link abre uma busca onde os resultados são grupos e convites reais — clique nos que combinam com seu público, entre e participe respeitando as regras de cada comunidade.
                 </p>
               </div>
             )}
