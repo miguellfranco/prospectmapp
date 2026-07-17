@@ -3,6 +3,7 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { geminiGenerate, parseJsonLoose } from '@/lib/gemini'
 import { isRateLimited } from '@/lib/rate-limit'
@@ -19,6 +20,7 @@ const COUNTRY_LABELS: Record<string, string> = { BR: 'Brasil', PT: 'Portugal', U
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  if (!hasActiveAccess(user)) return NextResponse.json({ error: NO_ACCESS_MSG }, { status: 403 })
 
   if (isRateLimited(`grupos-gen:${user.id}`, 8, 60_000)) {
     return NextResponse.json({ error: 'Muitas buscas em pouco tempo. Aguarde um instante.' }, { status: 429 })

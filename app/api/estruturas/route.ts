@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { prisma } from '@/lib/db'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -27,6 +28,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  if (!hasActiveAccess(user)) return NextResponse.json({ error: NO_ACCESS_MSG }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const niche = String(body?.niche ?? '').trim()

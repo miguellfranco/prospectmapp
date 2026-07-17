@@ -3,6 +3,7 @@ export const maxDuration = 60
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { geminiGenerate, parseJsonLoose } from '@/lib/gemini'
 import { isValidEbookDesign, ebookDesignToMarkdown, type EbookDesign } from '@/lib/ebook-export'
@@ -13,6 +14,7 @@ import { isRateLimited } from '@/lib/rate-limit'
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  if (!hasActiveAccess(user)) return NextResponse.json({ error: NO_ACCESS_MSG }, { status: 403 })
 
   if (isRateLimited(`ebook-gen:${user.id}`, 5, 60_000)) {
     return NextResponse.json({ error: 'Muitas gerações em pouco tempo. Aguarde um instante.' }, { status: 429 })

@@ -53,7 +53,10 @@ export async function POST(req: NextRequest) {
       }
     } catch {}
 
-    const chosenPlan = ['mensal', 'vitalicio'].includes(plan) ? plan : 'free'
+    // Segurança de receita: conta criada aqui NUNCA nasce com plano pago.
+    // Plano ativo só via pagamento confirmado (grant-access/AbacatePay).
+    void plan
+    const chosenPlan = 'free'
 
     let user = null
     try {
