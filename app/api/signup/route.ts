@@ -84,24 +84,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Register affiliate relationship + first commission
+    // Vínculo de afiliado (sem comissão no cadastro — conta nasce free;
+    // comissão só faria sentido após pagamento confirmado)
     if (referredBy) {
-      const first = chosenPlan === 'vitalicio' ? 98.5 : chosenPlan === 'mensal' ? 48.5 : 0
-      const aff = await prisma.affiliate.create({
+      await prisma.affiliate.create({
         data: {
           referrerId: referredBy,
           referredUserId: user.id,
           planType: chosenPlan,
-          firstCommission: first,
+          firstCommission: 0,
           status: 'active',
-          totalEarned: first,
+          totalEarned: 0,
         },
       })
-      if (first > 0) {
-        await prisma.commission.create({
-          data: { affiliateId: aff.id, amount: first, type: 'first', status: 'pending' },
-        })
-      }
     }
 
     return NextResponse.json({ ok: true, id: user.id })
