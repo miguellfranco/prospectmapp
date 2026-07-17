@@ -17,9 +17,40 @@ interface Integration {
 }
 
 const PROVIDERS = [
-  { id: 'kiwify', name: 'Kiwify', help: 'Painel Kiwify → Apps → API → gere Client ID e Client Secret.' },
-  { id: 'hotmart', name: 'Hotmart', help: 'Hotmart → Ferramentas → Credenciais API → Client ID e Client Secret.' },
-  { id: 'outro', name: 'Outro', help: 'Guarde as credenciais de outro gateway (sem validação automática).' },
+  {
+    id: 'kiwify',
+    name: 'Kiwify',
+    steps: [
+      'Acesse dashboard.kiwify.com.br e faça login na sua conta Kiwify.',
+      'No menu lateral, procure "Apps" (ou Configurações → Desenvolvedor) e clique em "API".',
+      'Clique em "Criar chave de API" — a Kiwify vai mostrar o Client ID, o Client Secret e o Account ID.',
+      'Copie e cole cada um nos campos abaixo (o Secret aparece uma única vez — copie na hora!).',
+      'Clique em "Validar e salvar" — nós testamos a conexão direto com a Kiwify.',
+      'Depois de salvar, copie a URL do webhook que aparece no cartão da integração e cadastre na Kiwify em Apps → Webhooks, marcando o evento "Compra aprovada" — suas vendas passam a aparecer no painel automaticamente.',
+    ],
+  },
+  {
+    id: 'hotmart',
+    name: 'Hotmart',
+    steps: [
+      'Acesse app.hotmart.com e faça login na sua conta Hotmart.',
+      'No menu, vá em "Ferramentas" e procure "Credenciais (API e SSO)".',
+      'Clique em "Criar credencial" e dê um nome (ex: InfoBook).',
+      'Copie o Client ID e o Client Secret e cole nos campos abaixo.',
+      'Clique em "Validar e salvar" — nós testamos a conexão direto com a Hotmart.',
+      'Depois de salvar, copie a URL do webhook do cartão da integração e cadastre na Hotmart em Ferramentas → Webhook (evento "Compra aprovada").',
+    ],
+  },
+  {
+    id: 'outro',
+    name: 'Outro',
+    steps: [
+      'Use esta opção para guardar credenciais de outro gateway (Cacto, Braip, etc.).',
+      'Cole o Client ID / chave e o Secret nos campos abaixo — ficam criptografados.',
+      'Este provedor não tem validação automática; confira as credenciais manualmente.',
+      'Depois de salvar, cadastre a URL do webhook no seu gateway para receber as vendas no painel.',
+    ],
+  },
 ]
 
 export default function IntegracoesPage() {
@@ -140,7 +171,24 @@ export default function IntegracoesPage() {
                 </button>
               ))}
             </div>
-            <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>{selectedProvider.help}</p>
+          </div>
+
+          {/* Passo a passo do provedor selecionado */}
+          <div className="p-4 rounded-xl" style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid var(--purple-border)' }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--purple-soft)' }}>
+              📋 Passo a passo — como conectar a {selectedProvider.name}
+            </p>
+            <ol className="space-y-2">
+              {selectedProvider.steps.map((s, i) => (
+                <li key={i} className="flex items-start gap-3 text-[13px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-jet text-[10px] font-bold mt-0.5"
+                    style={{ background: 'rgba(124,58,237,0.18)', color: 'var(--purple-soft)', border: '1px solid var(--purple-border)' }}>
+                    {i + 1}
+                  </span>
+                  <span>{s}</span>
+                </li>
+              ))}
+            </ol>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
