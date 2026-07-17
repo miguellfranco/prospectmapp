@@ -34,7 +34,12 @@ export async function GET() {
       }),
       prisma.structure.count({ where: { userId: user.id } }),
       prisma.ebookProduct.count({ where: { structure: { userId: user.id }, content: { not: null } } }),
-      prisma.landingPage.count({ where: { structure: { userId: user.id }, publishedAt: { not: null } } }),
+      prisma.landingPage.count({
+        where: {
+          structure: { userId: user.id },
+          OR: [{ publishedAt: { not: null } }, { userHostedUrl: { not: null } }],
+        },
+      }),
       prisma.paymentIntegration.count({ where: { userId: user.id, status: 'conectado' } }),
       prisma.infoproductSale.aggregate({
         where: { userId: user.id },

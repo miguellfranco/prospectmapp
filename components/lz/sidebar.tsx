@@ -40,7 +40,11 @@ export function Sidebar() {
     return () => window.removeEventListener('keydown', onKey)
   }, [me?.isAdmin])
 
-  const nav = me?.isAdmin ? [...NAV, { href: '/admin', label: 'Super Admin', icon: ShieldCheck }] : NAV
+  // O item "Super Admin" só aparece enquanto se está DENTRO do painel admin —
+  // fora dele, o único acesso é o atalho Ctrl+Shift+A (discrição total)
+  const nav = me?.isAdmin && pathname?.startsWith('/admin')
+    ? [...NAV, { href: '/admin', label: 'Super Admin', icon: ShieldCheck }]
+    : NAV
 
   const name = me?.name ?? session?.user?.name ?? 'Usuário'
   const plan = me?.plan ?? 'free'

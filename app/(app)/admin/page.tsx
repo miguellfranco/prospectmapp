@@ -41,6 +41,12 @@ export default function AdminPage() {
   const [rev7, setRev7] = useState('0,00')
   const [rev30, setRev30] = useState('0,00')
   const [revAll, setRevAll] = useState('0,00')
+  const [revCount, setRevCount] = useState('')
+
+  // Estruturas demo configuráveis
+  const [stCount, setStCount] = useState('9')
+  const [stEbooks, setStEbooks] = useState('8')
+  const [stLandings, setStLandings] = useState('2')
 
   function syncRevenueInputs(s: AdminStatus) {
     setRevToday(fmtBr(s.seedRevenue.today))
@@ -183,26 +189,46 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Estruturas de demonstração */}
+        {/* Estruturas de demonstração — números do funil sob medida */}
         <div className="lz-card p-6 flex flex-col">
           <div className="flex items-center gap-2 mb-1">
             <FlaskConical size={16} style={{ color: 'var(--purple-soft)' }} />
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Estruturas de demonstração</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Funil sob medida (estruturas demo)</p>
           </div>
           <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
-            5 estruturas com nichos, produtos, preços e status variados (rascunho → concluída) para preencher o grid.
-            Atual: <strong style={{ color: 'var(--purple-soft)' }}>{status.demoStructuresCount}</strong>
+            Controla os números do funil no painel: Estruturas, E-books gerados e Páginas no ar.
+            Atual: <strong style={{ color: 'var(--purple-soft)' }}>{status.demoStructuresCount} demo</strong>. Aplicar substitui as anteriores.
           </p>
+
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Estruturas</label>
+              <input value={stCount} onChange={(e) => setStCount(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="numeric" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Com e-book</label>
+              <input value={stEbooks} onChange={(e) => setStEbooks(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="numeric" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Com página</label>
+              <input value={stLandings} onChange={(e) => setStLandings(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="numeric" />
+            </div>
+          </div>
+
           <button
-            onClick={() => run('seed-structures')}
+            onClick={() => run('seed-structures', {
+              count: parseInt(stCount) || 5,
+              withEbook: parseInt(stEbooks) || 0,
+              withLanding: parseInt(stLandings) || 0,
+            })}
             disabled={busy !== null}
             className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm mt-auto"
           >
             {busy === 'seed-structures' ? <Loader2 size={15} className="animate-spin" /> : <Layers size={15} />}
-            Criar estruturas demo
+            Aplicar estruturas demo
           </button>
           <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>
-            Marcadas com o sub-nicho “DEMO”. Para conteúdo de e-book real, use o wizard normalmente.
+            Marcadas com o sub-nicho “DEMO” (máx. 100). Estruturas reais criadas no wizard somam por cima.
           </p>
         </div>
       </div>
@@ -217,7 +243,7 @@ export default function AdminPage() {
           Digite exatamente quanto cada card do painel deve mostrar. Regra: Hoje está dentro de 7 dias, que está dentro de 30 dias, que está dentro do Total — se os valores vierem incoerentes, ajustamos para cima automaticamente. Aplicar <strong>substitui</strong> as vendas de demonstração atuais.
         </p>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Hoje (R$)</label>
             <input value={revToday} onChange={(e) => setRevToday(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="decimal" />
@@ -234,6 +260,10 @@ export default function AdminPage() {
             <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Total acumulado (R$)</label>
             <input value={revAll} onChange={(e) => setRevAll(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="decimal" />
           </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Qtd. vendas (opcional)</label>
+            <input value={revCount} onChange={(e) => setRevCount(e.target.value)} placeholder="auto" className="lz-input !py-2.5 font-jet text-sm" inputMode="numeric" />
+          </div>
         </div>
 
         <button
@@ -242,6 +272,7 @@ export default function AdminPage() {
             last7: parseBr(rev7),
             last30: parseBr(rev30),
             allTime: parseBr(revAll),
+            salesCount: revCount.trim() ? parseInt(revCount) : undefined,
           })}
           disabled={busy !== null}
           className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"

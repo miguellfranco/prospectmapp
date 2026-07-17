@@ -86,6 +86,23 @@ function splitAmount(total: number): number[] {
   return out.map((c) => c / 100)
 }
 
+// Divide um valor em EXATAMENTE k vendas (para bater também a contagem)
+function splitExactCount(totalCents: number, k: number): number[] {
+  if (totalCents <= 0) return []
+  k = Math.max(1, Math.min(k, totalCents))
+  const out: number[] = []
+  let remaining = totalCents
+  for (let j = 0; j < k - 1; j++) {
+    const slotsLeft = k - j - 1
+    const avg = remaining / (slotsLeft + 1)
+    const piece = Math.max(1, Math.min(Math.round(avg * (0.5 + Math.random())), remaining - slotsLeft))
+    out.push(piece)
+    remaining -= piece
+  }
+  out.push(remaining)
+  return out
+}
+
 export async function GET() {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
@@ -167,10 +184,26 @@ export async function POST(req: NextRequest) {
         { amount: allTime - last30, fromMs: startOfToday.getTime() - 119 * DAY, toMs: startOfToday.getTime() - 29 * DAY - 1 },
       ]
 
+      // Quantidade exata de vendas (opcional): distribui proporcionalmente
+      // entre os períodos; sem ela, usa tickets realistas automáticos
+      const salesCountRaw = Number(body?.salesCount)
+      const salesCount = Number.isFinite(salesCountRaw) && salesCountRaw >= 1 ? Math.min(30000, Math.floor(salesCountRaw)) : null
+      let bucketCounts: number[] | null = null
+      if (salesCount && allTime > 0) {
+        bucketCounts = buckets.map((b) => (b.amount > 0 ? Math.max(1, Math.round(salesCount * (b.amount / allTime))) : 0))
+        // Ajusta a soma para bater exatamente salesCount (mexe no maior bucket)
+        let diff = salesCount - bucketCounts.reduce((a, c) => a + c, 0)
+        const biggest = bucketCounts.indexOf(Math.max(...bucketCounts))
+        bucketCounts[biggest] = Math.max(1, bucketCounts[biggest] + diff)
+      }
+
       const stamp = Date.now().toString(36)
       let i = 0
-      const data = buckets.flatMap((b) =>
-        splitAmount(b.amount).map((amount) => ({
+      const data = buckets.flatMap((b, bi) =>
+        (bucketCounts
+          ? splitExactCount(Math.round(b.amount * 100), bucketCounts[bi]).map((c) => c / 100)
+          : splitAmount(b.amount)
+        ).map((amount) => ({
           userId: admin.id,
           productId: products.length ? products[Math.floor(Math.random() * products.length)].id : null,
           amount,
@@ -190,24 +223,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, created: data.length, status: await getStatus(admin.id) })
     }
 
+    // Estruturas demo configuráveis: total, quantas têm e-book e quantas têm
+    // página no ar — para bater exatamente os números do funil no painel.
+    // Substitui as estruturas DEMO existentes (números exatos, sem empilhar).
     if (action === 'seed-structures') {
-      const existing = await prisma.structure.count({ where: { userId: admin.id, subNiche: 'DEMO' } })
-      let created = 0
-      for (const d of DEMO_NICHES.slice(0, Math.max(0, 5 - existing))) {
+      const count = Math.min(100, Math.max(1, Number(body?.count) || 5))
+      const withEbook = Math.min(count, Math.max(0, Number(body?.withEbook ?? count)))
+      const withLanding = Math.min(count, Math.max(0, Number(body?.withLanding ?? 0)))
+
+      await prisma.structure.deleteMany({ where: { userId: admin.id, subNiche: 'DEMO' } })
+
+      const stamp = Date.now().toString(36)
+      for (let i = 0; i < count; i++) {
+        const d = DEMO_NICHES[i % DEMO_NICHES.length]
+        const hasEbook = i < withEbook
+        const hasLanding = i < withLanding
+        const status = hasLanding ? (i % 2 === 0 ? 'concluida' : 'landing_gerada') : hasEbook ? 'conteudo_gerado' : 'rascunho'
+
         const structure = await prisma.structure.create({
-          data: { userId: admin.id, niche: d.niche, subNiche: 'DEMO', title: d.title, status: d.status },
+          data: { userId: admin.id, niche: d.niche, subNiche: 'DEMO', title: d.title, status },
         })
-        await prisma.ebookProduct.create({
-          data: {
-            structureId: structure.id,
-            name: d.product,
-            price: d.price,
-            content: `# ${d.product}\n\nConteúdo de demonstração (QA) — gere pelo wizard para conteúdo real.`,
-          },
-        })
-        created++
+        if (hasEbook) {
+          await prisma.ebookProduct.create({
+            data: {
+              structureId: structure.id,
+              name: d.product,
+              price: d.price,
+              content: `# ${d.product}\n\nConteúdo de demonstração (QA) — gere pelo wizard para conteúdo real.`,
+            },
+          })
+        }
+        if (hasLanding) {
+          await prisma.landingPage.create({
+            data: {
+              structureId: structure.id,
+              slug: `demo-${stamp}-${i}`,
+              headline: d.title,
+              copyJson: '{}',
+              priceDisplay: `R$ ${d.price.toFixed(2).replace('.', ',')}`,
+              userHostedUrl: 'https://exemplo-demo.netlify.app',
+            },
+          })
+        }
       }
-      return NextResponse.json({ ok: true, created, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id) })
     }
 
     if (action === 'clear') {
