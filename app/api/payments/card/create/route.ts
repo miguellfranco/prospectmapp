@@ -3,7 +3,7 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { createCardCheckout, PLAN_PRICES_CENTS, PLAN_PRODUCT_IDS, PLAN_LABELS } from '@/lib/abacatepay'
+import { createCardCheckout, getOrCreateProductId, PLAN_PRICES_CENTS } from '@/lib/abacatepay'
 import { isRateLimited } from '@/lib/rate-limit'
 
 function isValidEmail(email: string) {
@@ -30,9 +30,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Telefone inválido.' }, { status: 400 })
     }
     const amountCents = PLAN_PRICES_CENTS[plan]
-    const productId = PLAN_PRODUCT_IDS[plan]
-    if (!amountCents || !productId) {
-      return NextResponse.json({ error: 'Plano inválido ou não configurado.' }, { status: 400 })
+    if (!amountCents) {
+      return NextResponse.json({ error: 'Plano inválido.' }, { status: 400 })
+    }
+
+    // Produto do gateway resolvido automaticamente (env → conta → cria na hora)
+    let productId: string | null = null
+    try {
+      productId = await getOrCreateProductId(plan)
+    } catch (e) {
+      console.error('Falha ao resolver produto no gateway:', e)
+    }
+    if (!productId) {
+      return NextResponse.json({ error: 'Não foi possível preparar o produto no gateway. Tente novamente em instantes.' }, { status: 502 })
     }
 
     const siteUrl = process.env.NEXTAUTH_URL || 'https://extracted-olive.vercel.app'

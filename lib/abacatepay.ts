@@ -123,6 +123,53 @@ export async function createProduct(params: CreateProductParams): Promise<{ id: 
   return json.data
 }
 
+export async function listProducts(): Promise<any[]> {
+  const response = await fetch(`${ABACATEPAY_API_URL}/products/list`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${getApiKey()}` },
+    signal: AbortSignal.timeout(15000),
+  })
+  const json = await response.json().catch(() => null)
+  if (!response.ok || !json?.success) {
+    throw new Error(`AbacatePay product list failed: ${response.status} ${JSON.stringify(json)}`)
+  }
+  return Array.isArray(json.data) ? json.data : []
+}
+
+// Resolve o produto do plano no gateway sem depender de configuração manual:
+// env → cache do processo → busca na conta por externalId → cria na hora.
+// Assim o checkout de cartão funciona para qualquer plano novo automaticamente.
+const productIdCache: Record<string, string> = {}
+
+export async function getOrCreateProductId(plan: string): Promise<string | null> {
+  const fromEnv = PLAN_PRODUCT_IDS[plan]
+  if (fromEnv) return fromEnv
+  if (productIdCache[plan]) return productIdCache[plan]
+
+  const priceCents = PLAN_PRICES_CENTS[plan]
+  if (!priceCents) return null
+  const externalId = `plan_${plan}`
+
+  try {
+    const products = await listProducts()
+    const found = products.find((p: any) => p?.externalId === externalId)
+    if (found?.id) {
+      productIdCache[plan] = found.id
+      return found.id
+    }
+  } catch (e) {
+    console.warn('AbacatePay products/list indisponível, tentando criar direto:', e)
+  }
+
+  const created = await createProduct({
+    externalId,
+    name: `InfoBook — Plano ${PLAN_LABELS[plan] ?? plan}`,
+    priceCents,
+  })
+  productIdCache[plan] = created.id
+  return created.id
+}
+
 export interface CreateCardCheckoutParams {
   productId: string
   amountCents: number
