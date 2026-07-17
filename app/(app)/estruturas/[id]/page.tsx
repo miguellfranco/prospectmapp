@@ -28,6 +28,7 @@ interface StructureDetail {
   landingPage: {
     slug: string; primaryColor: string; secondaryColor: string; publishedAt: string | null
     headline: string; copyJson: string; priceDisplay: string | null
+    userHostedUrl: string | null; netlifySiteId: string | null
   } | null
   outreachGroups: { id: string; platform: string; groupName: string; groupUrl: string; country: string }[]
   outreachMessages: { id: string; generatedText: string; createdAt: string }[]
@@ -75,6 +76,8 @@ function EstruturaWizard() {
   const [secondaryColor, setSecondaryColor] = useState('#05050b')
   const [painInput, setPainInput] = useState('')
   const [generatingLanding, setGeneratingLanding] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [userUrlInput, setUserUrlInput] = useState('')
 
   // Passo 4 — grupos
   const [country, setCountry] = useState('BR')
@@ -95,7 +98,7 @@ function EstruturaWizard() {
     else setPriceInput(suggestPrice(s.niche).toFixed(2).replace('.', ','))
     if (s.product?.paymentIntegrationId) setSelectedIntegration(s.product.paymentIntegrationId)
     if (s.product?.checkoutUrl) setCheckoutInput(s.product.checkoutUrl)
-    if (s.landingPage) { setPrimaryColor(s.landingPage.primaryColor); setSecondaryColor(s.landingPage.secondaryColor) }
+    if (s.landingPage) { setPrimaryColor(s.landingPage.primaryColor); setSecondaryColor(s.landingPage.secondaryColor); setUserUrlInput(s.landingPage.userHostedUrl ?? '') }
     setPainInput(s.title)
     setStep(STRUCTURE_STATUS[s.status]?.step ?? 0)
     return s
@@ -268,6 +271,38 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
     }
   }
 
+  // Publica na conta Netlify do próprio usuário (integração em /integracoes)
+  async function handlePublishNetlify() {
+    setPublishing(true)
+    try {
+      const res = await fetch(`/api/estruturas/${id}/publicar`, { method: 'POST' })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d?.error ?? 'Falha ao publicar.')
+      toast.success('Página publicada na sua Netlify! 🎉')
+      await load()
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  async function handleSaveUserUrl() {
+    try {
+      const res = await fetch(`/api/estruturas/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ landingUserUrl: userUrlInput.trim() }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d?.error ?? 'Erro ao salvar a URL.')
+      toast.success('URL da sua página salva! A mensagem de divulgação vai usá-la.')
+      await load()
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
   async function handleDiscoverGroups() {
     setDiscovering(true)
     try {
@@ -348,7 +383,13 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
   const maxStep = STRUCTURE_STATUS[structure.status]?.step ?? 0
   const latestMessage = structure.outreachMessages[0] ?? null
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-  const landingUrl = structure.landingPage ? `${baseUrl}/p/${structure.landingPage.slug}` : null
+  // URL final da página: a que o usuário publicou (Netlify dele) — páginas
+  // antigas ainda hospedadas em /p/ funcionam como fallback
+  const landingUrl =
+    structure.landingPage?.userHostedUrl ||
+    (structure.landingPage?.publishedAt ? `${baseUrl}/p/${structure.landingPage.slug}` : null)
+  const landingGenerated = Boolean(structure.landingPage)
+  const hasNetlify = Boolean(integrations?.some((i) => i.provider === 'netlify' && i.status === 'conectado'))
 
   return (
     <div className="p-6 md:p-10 pb-24 md:pb-10 max-w-4xl mx-auto">
@@ -652,7 +693,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                 <Sparkles size={16} /> {structure.landingPage ? 'Gerar página novamente' : 'Gerar Página de Vendas'}
               </button>
 
-              {landingUrl && (
+              {landingGenerated && (
                 <>
                   {/* Pré-visualização embutida — renderiza exatamente o HTML que o botão baixa */}
                   <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--purple-border)', boxShadow: '0 10px 40px rgba(124,58,237,0.15)' }}>
@@ -675,29 +716,86 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                     />
                   </div>
 
-                  <button onClick={handleDownloadLanding} className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm">
-                    <Download size={15} /> Baixar página (index.html) para hospedar onde quiser
-                  </button>
-                  <p className="text-[11px] -mt-2" style={{ color: 'var(--text-muted)' }}>
-                    A página é 100% sua: coloque o <code>index.html</code> numa pasta e arraste em{' '}
-                    <a href="https://app.netlify.com/drop" target="_blank" rel="noreferrer" className="underline" style={{ color: 'var(--purple-soft)' }}>netlify.com/drop</a>
-                    {' '}— publicação grátis com URL própria em menos de 1 minuto.
-                  </p>
-                  <div className="p-4 rounded-xl flex items-center justify-between gap-3"
-                    style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)' }}>
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>Pré-visualização hospedada</p>
-                      <span className="text-xs font-jet truncate block" style={{ color: 'var(--success)' }}>{landingUrl}</span>
+                  {/* Publicação com 1 clique (Netlify do usuário) */}
+                  {hasNetlify ? (
+                    <button onClick={handlePublishNetlify} disabled={publishing} className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm">
+                      {publishing ? <Loader2 size={15} className="animate-spin" /> : <Globe size={15} />}
+                      {structure.landingPage?.netlifySiteId ? 'Republicar na minha Netlify (mesmo endereço)' : 'Publicar na minha Netlify com 1 clique'}
+                    </button>
+                  ) : (
+                    <div className="p-3.5 rounded-xl text-xs flex items-start gap-2.5"
+                      style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid var(--purple-border)', color: 'var(--text-secondary)' }}>
+                      <Globe size={15} className="shrink-0 mt-0.5" style={{ color: 'var(--purple-soft)' }} />
+                      <span>
+                        ⚡ Quer publicar com <strong style={{ color: 'var(--text-primary)' }}>1 clique</strong>?{' '}
+                        <Link href="/integracoes" className="underline" style={{ color: 'var(--purple-soft)' }}>Conecte sua conta Netlify</Link>
+                        {' '}(grátis) e o botão de publicação automática aparece aqui.
+                      </span>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button onClick={() => copyText(landingUrl, 'Link copiado!')} className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
-                        <Copy size={15} />
-                      </button>
-                      <a href={landingUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
-                        <ExternalLink size={15} />
-                      </a>
+                  )}
+
+                  <button onClick={handleDownloadLanding} className="lz-btn-secondary w-full inline-flex items-center justify-center gap-2 text-sm">
+                    <Download size={15} /> Baixar página (index.html)
+                  </button>
+
+                  {/* Passo a passo de hospedagem manual */}
+                  <div className="p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-default)' }}>
+                    <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--purple-soft)' }}>
+                      📋 Como publicar sua página grátis (2 minutos)
+                    </p>
+                    <ol className="space-y-2">
+                      {[
+                        'Clique em "Baixar página" acima — o arquivo index.html vai para o seu computador.',
+                        'Crie uma pasta nova e coloque o index.html dentro dela.',
+                        <>Acesse <a href="https://app.netlify.com/drop" target="_blank" rel="noreferrer" className="underline" style={{ color: 'var(--purple-soft)' }}>app.netlify.com/drop</a> (grátis, sem cartão de crédito) e arraste a pasta para a tela.</>,
+                        'Pronto! A Netlify gera sua URL na hora (algo como seusite.netlify.app).',
+                        'Copie essa URL e cole no campo abaixo — a mensagem de divulgação vai usar o SEU link.',
+                      ].map((s, i) => (
+                        <li key={i} className="flex items-start gap-3 text-[13px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-jet text-[10px] font-bold mt-0.5"
+                            style={{ background: 'rgba(124,58,237,0.18)', color: 'var(--purple-soft)', border: '1px solid var(--purple-border)' }}>
+                            {i + 1}
+                          </span>
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="text-[11px] mt-3" style={{ color: 'var(--text-muted)' }}>
+                      Também funciona na Vercel, Hostinger ou qualquer hospedagem — é um arquivo HTML comum, 100% seu.
+                    </p>
+                  </div>
+
+                  {/* URL publicada pelo usuário */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      URL da sua página publicada
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        value={userUrlInput} onChange={(e) => setUserUrlInput(e.target.value)}
+                        placeholder="https://seusite.netlify.app" className="lz-input font-jet text-xs flex-1"
+                      />
+                      <button onClick={handleSaveUserUrl} className="lz-btn-secondary !px-4 shrink-0 text-xs">Salvar</button>
                     </div>
                   </div>
+
+                  {landingUrl && (
+                    <div className="p-4 rounded-xl flex items-center justify-between gap-3"
+                      style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text-muted)' }}>Sua página no ar</p>
+                        <span className="text-xs font-jet truncate block" style={{ color: 'var(--success)' }}>{landingUrl}</span>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => copyText(landingUrl, 'Link copiado!')} className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
+                          <Copy size={15} />
+                        </button>
+                        <a href={landingUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg" style={{ color: 'var(--success)' }}>
+                          <ExternalLink size={15} />
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>

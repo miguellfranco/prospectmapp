@@ -42,6 +42,18 @@ const PROVIDERS = [
     ],
   },
   {
+    id: 'netlify',
+    name: 'Netlify',
+    steps: [
+      'Crie uma conta grátis em netlify.com (não pede cartão de crédito).',
+      'Logado, acesse app.netlify.com → clique no seu avatar → "User settings".',
+      'No menu, clique em "Applications" e depois em "New access token".',
+      'Dê um nome (ex: InfoBook), clique em "Generate token" e copie o token (aparece uma única vez!).',
+      'Cole o token no campo abaixo e clique em "Validar e salvar".',
+      'Pronto! No Passo 3 do wizard vai aparecer o botão "Publicar na minha Netlify com 1 clique" — a página é publicada na SUA conta, com URL própria.',
+    ],
+  },
+  {
     id: 'outro',
     name: 'Outro',
     steps: [
@@ -156,7 +168,7 @@ export default function IntegracoesPage() {
         <form onSubmit={handleSave} className="lz-card p-6 mb-8 space-y-5">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Provedor</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {PROVIDERS.map((p) => (
                 <button
                   key={p.id} type="button" onClick={() => setProvider(p.id)}
@@ -204,16 +216,23 @@ export default function IntegracoesPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {provider === 'netlify' ? (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Client ID</label>
-              <input value={clientId} onChange={(e) => setClientId(e.target.value)} required={provider !== 'outro'} className="lz-input font-jet text-xs" autoComplete="off" />
+              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Personal Access Token</label>
+              <input value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} required type="password" className="lz-input font-jet text-xs" autoComplete="off" placeholder="nfp_..." />
             </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Client Secret</label>
-              <input value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} required={provider !== 'outro'} type="password" className="lz-input font-jet text-xs" autoComplete="off" />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Client ID</label>
+                <input value={clientId} onChange={(e) => setClientId(e.target.value)} required={provider !== 'outro'} className="lz-input font-jet text-xs" autoComplete="off" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Client Secret</label>
+                <input value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} required={provider !== 'outro'} type="password" className="lz-input font-jet text-xs" autoComplete="off" />
+              </div>
             </div>
-          </div>
+          )}
 
           <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
             🔒 Suas credenciais são criptografadas (AES-256) antes de serem salvas e validadas direto com a API oficial do gateway.
@@ -285,6 +304,7 @@ export default function IntegracoesPage() {
                   </div>
                 </div>
 
+                {i.provider !== 'netlify' && (
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
                   <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                     Webhook de vendas
@@ -302,6 +322,7 @@ export default function IntegracoesPage() {
                     Cadastre esta URL nos webhooks do {i.provider === 'kiwify' ? 'painel da Kiwify (evento: Compra aprovada)' : i.provider === 'hotmart' ? 'painel da Hotmart (evento: Compra aprovada)' : 'seu gateway'} — cada venda aprovada aparece automaticamente no seu painel.
                   </p>
                 </div>
+                )}
               </div>
             )
           })}

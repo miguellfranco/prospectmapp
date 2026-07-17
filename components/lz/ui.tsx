@@ -124,6 +124,6 @@ export function CountUp({ value, duration = 1000, prefix = '', decimals = 0 }: {
 }
 
 export function brl(value?: number | null) {
-  if (value == null) return 'R$ 0'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  if (value == null) return 'R$ 0,00'
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }

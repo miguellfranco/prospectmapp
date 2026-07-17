@@ -116,7 +116,8 @@ Responda APENAS com JSON válido neste formato exato:
           subheadline: (copy.subheadline ?? '').slice(0, 400),
           copyJson: JSON.stringify(copy),
           priceDisplay,
-          publishedAt: landing.publishedAt ?? new Date(),
+          // publishedAt não é mais definido: a página é hospedada pelo próprio
+          // usuário (download ou 1 clique na Netlify dele), não no nosso Vercel
         },
       })
     } else {
@@ -139,7 +140,6 @@ Responda APENAS com JSON válido neste formato exato:
           subheadline: (copy.subheadline ?? '').slice(0, 400),
           copyJson: JSON.stringify(copy),
           priceDisplay,
-          publishedAt: new Date(),
         },
       })
     }

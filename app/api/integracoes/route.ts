@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
   const provider = String(body?.provider ?? '').toLowerCase() as GatewayProvider
   const label = body?.label ? String(body.label).trim().slice(0, 80) : null
 
-  if (!['kiwify', 'hotmart', 'outro'].includes(provider)) {
-    return NextResponse.json({ error: 'Provedor inválido. Use kiwify, hotmart ou outro.' }, { status: 400 })
+  if (!['kiwify', 'hotmart', 'netlify', 'outro'].includes(provider)) {
+    return NextResponse.json({ error: 'Provedor inválido. Use kiwify, hotmart, netlify ou outro.' }, { status: 400 })
   }
 
   const creds = {
@@ -58,7 +58,9 @@ export async function POST(req: NextRequest) {
     notes: body?.notes ? String(body.notes).trim().slice(0, 500) : undefined,
   }
 
-  if (provider !== 'outro' && (!creds.clientId || !creds.clientSecret)) {
+  if (provider === 'netlify') {
+    if (!creds.clientSecret) return NextResponse.json({ error: 'Informe o Personal Access Token da Netlify.' }, { status: 400 })
+  } else if (provider !== 'outro' && (!creds.clientId || !creds.clientSecret)) {
     return NextResponse.json({ error: 'Informe Client ID e Client Secret.' }, { status: 400 })
   }
 

@@ -8,7 +8,9 @@
 //     e o fluxo do app pede o link de checkout criado no painel do gateway.
 // Nunca inventamos um checkout_url ou um external_product_id falso.
 
-export type GatewayProvider = 'kiwify' | 'hotmart' | 'outro'
+import { testNetlifyToken } from './netlify'
+
+export type GatewayProvider = 'kiwify' | 'hotmart' | 'netlify' | 'outro'
 
 export interface GatewayCredentials {
   clientId?: string
@@ -25,6 +27,7 @@ export interface ConnectionResult {
 export const PROVIDER_LABELS: Record<string, string> = {
   kiwify: 'Kiwify',
   hotmart: 'Hotmart',
+  netlify: 'Netlify (hospedagem)',
   outro: 'Outro gateway',
 }
 
@@ -59,6 +62,13 @@ export async function testConnection(provider: GatewayProvider, creds: GatewayCr
       const json = await res.json().catch(() => null)
       if (res.ok && json?.access_token) return { ok: true, message: 'Conexão com a Hotmart validada com sucesso.' }
       return { ok: false, message: `A Hotmart recusou as credenciais (HTTP ${res.status}). Confira Client ID e Secret.` }
+    }
+
+    if (provider === 'netlify') {
+      if (!creds.clientSecret) {
+        return { ok: false, message: 'Informe o Personal Access Token da Netlify (app.netlify.com → User settings → Applications → New access token).' }
+      }
+      return testNetlifyToken(creds.clientSecret)
     }
 
     // "outro": não há endpoint padrão para validar — salva sem validação automática

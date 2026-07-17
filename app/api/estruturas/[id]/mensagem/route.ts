@@ -29,8 +29,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   })
   if (!structure) return NextResponse.json({ error: 'Estrutura não encontrada' }, { status: 404 })
 
+  // Prioridade: URL publicada pelo próprio usuário (Netlify/Vercel dele);
+  // páginas antigas ainda hospedadas em /p/ funcionam como fallback
   const baseUrl = process.env.NEXTAUTH_URL || ''
-  const landingUrl = structure.landingPage ? `${baseUrl}/p/${structure.landingPage.slug}` : null
+  const landingUrl =
+    structure.landingPage?.userHostedUrl ||
+    (structure.landingPage?.publishedAt ? `${baseUrl}/p/${structure.landingPage.slug}` : null)
 
   const styles: Record<number, string> = {
     1: 'Comece com uma pergunta que toca na dor, depois apresente o material como algo que você criou para resolver exatamente isso.',

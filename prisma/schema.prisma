@@ -259,7 +259,9 @@ model LandingPage {
   subheadline    String?
   copyJson       String    @db.Text // seções geradas pela IA (benefícios, por que funciona, FAQ, CTA)
   priceDisplay   String?
-  publishedAt    DateTime?
+  publishedAt    DateTime? // legado: páginas antigas hospedadas em /p/[slug]; novas ficam null
+  userHostedUrl  String?   @db.Text // URL da página publicada pelo usuário (Netlify/Vercel dele)
+  netlifySiteId  String?   // site criado via integração Netlify (para republicar no mesmo endereço)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

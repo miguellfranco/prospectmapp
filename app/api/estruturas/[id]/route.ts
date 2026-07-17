@@ -59,6 +59,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         data: { name: body.productName.trim().slice(0, 150) },
       })
     }
+    // URL da página publicada pelo próprio usuário (Netlify/Vercel dele)
+    if (typeof body?.landingUserUrl === 'string') {
+      const url = body.landingUserUrl.trim()
+      if (url && !/^https?:\/\//i.test(url)) {
+        return NextResponse.json({ error: 'A URL da página precisa começar com http:// ou https://' }, { status: 400 })
+      }
+      const landing = await prisma.landingPage.findUnique({ where: { structureId: structure.id } })
+      if (landing) {
+        await prisma.landingPage.update({ where: { id: landing.id }, data: { userHostedUrl: url || null } })
+      }
+    }
+
     // Cor de destaque do e-book (capa, capítulos, cards)
     if (typeof body?.ebookAccentColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(body.ebookAccentColor) && structure.product) {
       await prisma.ebookProduct.update({

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Sparkles, Layers, TrendingUp, CalendarDays, CalendarRange, ExternalLink, Loader2, Plug,
-  BookOpen, Globe, ShoppingCart, ArrowRight, CheckCircle2, Circle, Wallet,
+  BookOpen, Globe, ShoppingCart, ArrowRight, CheckCircle2, Circle, Wallet, Eye, EyeOff,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -30,6 +30,18 @@ interface PanelData {
 export default function PainelPage() {
   const [data, setData] = useState<PanelData | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Olho de privacidade: oculta os valores de faturamento (lembrado no navegador)
+  const [hideValues, setHideValues] = useState(false)
+  useEffect(() => {
+    setHideValues(localStorage.getItem('ib_hide_values') === '1')
+  }, [])
+  function toggleHide() {
+    setHideValues((v) => {
+      localStorage.setItem('ib_hide_values', v ? '0' : '1')
+      return !v
+    })
+  }
 
   useEffect(() => {
     fetch('/api/painel')
@@ -93,9 +105,18 @@ export default function PainelPage() {
         highlight="👋"
         description="Aqui está o resumo do seu império de infoprodutos."
         actions={
-          <Link href="/estruturas/nova" className="lz-btn-primary inline-flex items-center gap-2">
-            <Sparkles size={16} /> Nova Estrutura
-          </Link>
+          <>
+            <button
+              onClick={toggleHide}
+              title={hideValues ? 'Mostrar valores' : 'Ocultar valores'}
+              className="lz-btn-secondary !px-3.5 inline-flex items-center"
+            >
+              {hideValues ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+            <Link href="/estruturas/nova" className="lz-btn-primary inline-flex items-center gap-2">
+              <Sparkles size={16} /> Nova Estrutura
+            </Link>
+          </>
         }
       />
 
@@ -116,7 +137,7 @@ export default function PainelPage() {
               </div>
             </div>
             <div className="text-2xl md:text-[26px] font-black font-grotesk" style={{ color: 'var(--text-primary)' }}>
-              R$ <CountUp value={c.value} decimals={2} />
+              {hideValues ? 'R$ ••••••' : <>R$ <CountUp value={c.value} decimals={2} /></>}
             </div>
           </div>
         ))}
@@ -151,7 +172,7 @@ export default function PainelPage() {
               <span className="lz-badge lz-badge-new">{data.salesCount30d} venda{data.salesCount30d > 1 ? 's' : ''}</span>
             )}
           </div>
-          <div className="h-56 relative">
+          <div className="h-56 relative" style={hideValues ? { filter: 'blur(10px)', pointerEvents: 'none' } : undefined}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                 <defs>
@@ -238,7 +259,7 @@ export default function PainelPage() {
                 {gateways.map(([gw, total]) => (
                   <div key={gw} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
                     <span className="text-sm font-medium capitalize" style={{ color: 'var(--text-primary)' }}>{gw}</span>
-                    <span className="font-jet text-sm" style={{ color: 'var(--purple-soft)' }}>{brl(total)}</span>
+                    <span className="font-jet text-sm" style={{ color: 'var(--purple-soft)' }}>{hideValues ? 'R$ ••••••' : brl(total)}</span>
                   </div>
                 ))}
               </div>
