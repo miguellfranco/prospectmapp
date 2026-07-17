@@ -38,6 +38,7 @@ export async function GET() {
       dailyLimit,
       daysActive,
       trackingPixelId,
+      isAdmin: Boolean(process.env.MASTER_EMAIL && user.email?.toLowerCase() === process.env.MASTER_EMAIL.trim().toLowerCase()),
     })
   } catch (e) {
     console.error(e)

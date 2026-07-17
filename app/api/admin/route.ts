@@ -29,13 +29,27 @@ async function requireAdmin() {
   return user
 }
 
+function periodStarts() {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const DAY = 24 * 60 * 60 * 1000
+  return {
+    now,
+    startOfToday,
+    start7: new Date(startOfToday.getTime() - 6 * DAY),
+    start30: new Date(startOfToday.getTime() - 29 * DAY),
+    DAY,
+  }
+}
+
 async function getStatus(userId: string) {
-  const [seedSales, demoStructures, totals] = await Promise.all([
-    prisma.infoproductSale.aggregate({
-      where: { userId, gatewayTransactionId: { startsWith: 'seed_' } },
-      _count: true,
-      _sum: { amount: true },
-    }),
+  const { startOfToday, start7, start30 } = periodStarts()
+  const seedWhere = { userId, gatewayTransactionId: { startsWith: 'seed_' } }
+  const [seedSales, seedToday, seed7, seed30, demoStructures, totals] = await Promise.all([
+    prisma.infoproductSale.aggregate({ where: seedWhere, _count: true, _sum: { amount: true } }),
+    prisma.infoproductSale.aggregate({ where: { ...seedWhere, paidAt: { gte: startOfToday } }, _sum: { amount: true } }),
+    prisma.infoproductSale.aggregate({ where: { ...seedWhere, paidAt: { gte: start7 } }, _sum: { amount: true } }),
+    prisma.infoproductSale.aggregate({ where: { ...seedWhere, paidAt: { gte: start30 } }, _sum: { amount: true } }),
     prisma.structure.count({ where: { userId, subNiche: 'DEMO' } }),
     prisma.$transaction([
       prisma.user.count(),
@@ -47,9 +61,29 @@ async function getStatus(userId: string) {
   return {
     seedSalesCount: seedSales._count,
     seedSalesTotal: seedSales._sum.amount ?? 0,
+    seedRevenue: {
+      today: seedToday._sum.amount ?? 0,
+      last7: seed7._sum.amount ?? 0,
+      last30: seed30._sum.amount ?? 0,
+      allTime: seedSales._sum.amount ?? 0,
+    },
     demoStructuresCount: demoStructures,
     app: { users: totals[0], structures: totals[1], sales: totals[2], integrations: totals[3] },
   }
+}
+
+// Divide um valor em "vendas" de tamanhos realistas (R$9,90–R$59,90) que somam
+// EXATAMENTE o total pedido (matemática em centavos)
+function splitAmount(total: number): number[] {
+  let remaining = Math.round(total * 100)
+  const out: number[] = []
+  while (remaining > 0) {
+    let piece = remaining <= 5990 ? remaining : 990 + Math.floor(Math.random() * 5000)
+    if (remaining - piece > 0 && remaining - piece < 100) piece = remaining
+    out.push(piece)
+    remaining -= piece
+  }
+  return out.map((c) => c / 100)
 }
 
 export async function GET() {
@@ -104,6 +138,56 @@ export async function POST(req: NextRequest) {
         await prisma.infoproductSale.createMany({ data: data.slice(i, i + 5000) })
       }
       return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id) })
+    }
+
+    // Define o faturamento de demonstração período por período, com valores
+    // EXATOS: Hoje ⊆ 7 dias ⊆ 30 dias ⊆ Total (ajustados automaticamente se
+    // vierem incoerentes). Substitui as vendas seed atuais.
+    if (action === 'set-revenue') {
+      const parse = (v: unknown) => {
+        const n = Number(v)
+        return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : 0
+      }
+      const today = parse(body?.today)
+      const last7 = Math.max(parse(body?.last7), today)
+      const last30 = Math.max(parse(body?.last30), last7)
+      const allTime = Math.max(parse(body?.allTime), last30)
+
+      const { now, startOfToday, DAY } = periodStarts()
+      const products = await prisma.ebookProduct.findMany({
+        where: { structure: { userId: admin.id } },
+        select: { id: true },
+        take: 20,
+      })
+
+      const buckets = [
+        { amount: today, fromMs: startOfToday.getTime(), toMs: Math.max(now.getTime(), startOfToday.getTime() + 1000) },
+        { amount: last7 - today, fromMs: startOfToday.getTime() - 6 * DAY, toMs: startOfToday.getTime() - 1 },
+        { amount: last30 - last7, fromMs: startOfToday.getTime() - 29 * DAY, toMs: startOfToday.getTime() - 6 * DAY - 1 },
+        { amount: allTime - last30, fromMs: startOfToday.getTime() - 119 * DAY, toMs: startOfToday.getTime() - 29 * DAY - 1 },
+      ]
+
+      const stamp = Date.now().toString(36)
+      let i = 0
+      const data = buckets.flatMap((b) =>
+        splitAmount(b.amount).map((amount) => ({
+          userId: admin.id,
+          productId: products.length ? products[Math.floor(Math.random() * products.length)].id : null,
+          amount,
+          gateway: Math.random() < 0.65 ? 'kiwify' : 'hotmart',
+          gatewayTransactionId: `seed_rev_${stamp}_${i++}_${Math.random().toString(36).slice(2, 8)}`,
+          buyerEmail: `comprador${i}@demo.local`,
+          paidAt: new Date(b.fromMs + Math.random() * (b.toMs - b.fromMs)),
+        }))
+      )
+
+      await prisma.infoproductSale.deleteMany({
+        where: { userId: admin.id, gatewayTransactionId: { startsWith: 'seed_' } },
+      })
+      for (let j = 0; j < data.length; j += 5000) {
+        await prisma.infoproductSale.createMany({ data: data.slice(j, j + 5000) })
+      }
+      return NextResponse.json({ ok: true, created: data.length, status: await getStatus(admin.id) })
     }
 
     if (action === 'seed-structures') {

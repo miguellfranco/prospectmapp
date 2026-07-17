@@ -11,8 +11,18 @@ import { PageHeader, brl } from '@/components/lz/ui'
 interface AdminStatus {
   seedSalesCount: number
   seedSalesTotal: number
+  seedRevenue: { today: number; last7: number; last30: number; allTime: number }
   demoStructuresCount: number
   app: { users: number; structures: number; sales: number; integrations: number }
+}
+
+function fmtBr(n: number): string {
+  return n.toFixed(2).replace('.', ',')
+}
+
+function parseBr(s: string): number {
+  const n = parseFloat(s.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? n : 0
 }
 
 // Painel Super Admin (dev/QA) — acessível apenas pelo MASTER_EMAIL.
@@ -26,6 +36,19 @@ export default function AdminPage() {
   const [salesDays, setSalesDays] = useState('30')
   const [salesAvg, setSalesAvg] = useState('29,90')
 
+  // Faturamento sob medida (por período)
+  const [revToday, setRevToday] = useState('0,00')
+  const [rev7, setRev7] = useState('0,00')
+  const [rev30, setRev30] = useState('0,00')
+  const [revAll, setRevAll] = useState('0,00')
+
+  function syncRevenueInputs(s: AdminStatus) {
+    setRevToday(fmtBr(s.seedRevenue.today))
+    setRev7(fmtBr(s.seedRevenue.last7))
+    setRev30(fmtBr(s.seedRevenue.last30))
+    setRevAll(fmtBr(s.seedRevenue.allTime))
+  }
+
   function load() {
     fetch('/api/admin')
       .then(async (r) => {
@@ -33,6 +56,7 @@ export default function AdminPage() {
         const d = await r.json().catch(() => null)
         if (!r.ok) throw new Error(d?.error ?? 'Erro ao carregar.')
         setStatus(d.status)
+        syncRevenueInputs(d.status)
       })
       .catch((e) => toast.error(e.message))
   }
@@ -50,9 +74,11 @@ export default function AdminPage() {
       const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(d?.error ?? 'Erro ao executar.')
       if (action === 'seed-sales') toast.success(`${d.created} vendas de demonstração criadas.`)
+      if (action === 'set-revenue') toast.success(`Faturamento ajustado com ${d.created} vendas de demonstração.`)
       if (action === 'seed-structures') toast.success(d.created ? `${d.created} estruturas demo criadas.` : 'As 5 estruturas demo já existem.')
       if (action === 'clear') toast.success(`Removido: ${d.removed.sales} vendas e ${d.removed.structures} estruturas demo.`)
       setStatus(d.status)
+      syncRevenueInputs(d.status)
     } catch (e: any) {
       toast.error(e.message)
     } finally {
@@ -179,6 +205,53 @@ export default function AdminPage() {
             Marcadas com o sub-nicho “DEMO”. Para conteúdo de e-book real, use o wizard normalmente.
           </p>
         </div>
+      </div>
+
+      {/* Faturamento sob medida — valores exatos por período */}
+      <div className="lz-card p-6 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Database size={16} style={{ color: 'var(--purple-soft)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Faturamento sob medida — período por período</p>
+        </div>
+        <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
+          Digite exatamente quanto cada card do painel deve mostrar. Regra: Hoje está dentro de 7 dias, que está dentro de 30 dias, que está dentro do Total — se os valores vierem incoerentes, ajustamos para cima automaticamente. Aplicar <strong>substitui</strong> as vendas de demonstração atuais.
+        </p>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Hoje (R$)</label>
+            <input value={revToday} onChange={(e) => setRevToday(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="decimal" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Últimos 7 dias (R$)</label>
+            <input value={rev7} onChange={(e) => setRev7(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="decimal" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Últimos 30 dias (R$)</label>
+            <input value={rev30} onChange={(e) => setRev30(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="decimal" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Total acumulado (R$)</label>
+            <input value={revAll} onChange={(e) => setRevAll(e.target.value)} className="lz-input !py-2.5 font-jet text-sm" inputMode="decimal" />
+          </div>
+        </div>
+
+        <button
+          onClick={() => run('set-revenue', {
+            today: parseBr(revToday),
+            last7: parseBr(rev7),
+            last30: parseBr(rev30),
+            allTime: parseBr(revAll),
+          })}
+          disabled={busy !== null}
+          className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+        >
+          {busy === 'set-revenue' ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+          Aplicar valores exatos no painel
+        </button>
+        <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>
+          As vendas são fatiadas em tickets realistas (R$9,90–R$59,90) que somam exatamente cada valor. Vendas reais (webhook) somam por cima desses números.
+        </p>
       </div>
 
       {/* Limpeza */}

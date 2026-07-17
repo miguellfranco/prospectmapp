@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import {
-  LayoutDashboard, Sparkles, Layers, Plug, Settings, LogOut, BookOpen,
+  LayoutDashboard, Sparkles, Layers, Plug, Settings, LogOut, BookOpen, ShieldCheck,
 } from 'lucide-react'
 
 const NAV = [
@@ -21,11 +21,26 @@ const PLAN_LABEL: Record<string, string> = { vitalicio: 'VITALÍCIO', mensal: 'M
 export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession() || {}
-  const [me, setMe] = useState<{ name?: string; plan?: string } | null>(null)
+  const [me, setMe] = useState<{ name?: string; plan?: string; isAdmin?: boolean } | null>(null)
 
   useEffect(() => {
     fetch('/api/me').then((r) => (r.ok ? r.json() : null)).then((d) => d && setMe(d)).catch(() => {})
   }, [])
+
+  // Atalho do Super Admin: Ctrl+Shift+A (só faz algo para o e-mail master)
+  useEffect(() => {
+    if (!me?.isAdmin) return
+    function onKey(e: KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault()
+        window.location.href = '/admin'
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [me?.isAdmin])
+
+  const nav = me?.isAdmin ? [...NAV, { href: '/admin', label: 'Super Admin', icon: ShieldCheck }] : NAV
 
   const name = me?.name ?? session?.user?.name ?? 'Usuário'
   const plan = me?.plan ?? 'free'
@@ -44,7 +59,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 px-3 space-y-1 overflow-y-auto scrollbar-none">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = pathname === item.href
             const Icon = item.icon
             return (
