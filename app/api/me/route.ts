@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 
 export async function GET() {
@@ -38,7 +39,7 @@ export async function GET() {
       dailyLimit,
       daysActive,
       trackingPixelId,
-      isAdmin: Boolean(process.env.MASTER_EMAIL && user.email?.toLowerCase() === process.env.MASTER_EMAIL.trim().toLowerCase()),
+      isAdmin: isAdminUser(user),
     })
   } catch (e) {
     console.error(e)

@@ -1,13 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="48" fill="#07070f"/>
-  <defs>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  <path d="M160 50L80 130h40l-40 76l80-80h-40l40-76z" fill="#7c3aed" filter="url(#glow)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0b0714"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#7c3aed" stroke-opacity="0.45" stroke-width="3"/>
+  <g fill="none" stroke="#8b5cf6" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 15h13a7 7 0 0 1 7 7v27a5.5 5.5 0 0 0-5.5-5.5H12z"/>
+    <path d="M52 15H39a7 7 0 0 0-7 7v27a5.5 5.5 0 0 1 5.5-5.5H52z"/>
+  </g>
 </svg>

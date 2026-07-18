@@ -3,6 +3,7 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 
 // Painel Super Admin (dev/QA) — exclusivo do MASTER_EMAIL.
@@ -22,10 +23,8 @@ const DEMO_NICHES = [
 ]
 
 async function requireAdmin() {
-  const master = process.env.MASTER_EMAIL?.trim().toLowerCase()
-  if (!master) return null
   const user = await getCurrentUser()
-  if (!user?.email || user.email.toLowerCase() !== master) return null
+  if (!user?.email || !isAdminUser(user)) return null
   return user
 }
 
@@ -58,7 +57,14 @@ async function getStatus(userId: string) {
       prisma.paymentIntegration.count(),
     ]),
   ])
+  const admins = await prisma.user.findMany({
+    where: { isAdmin: true },
+    select: { email: true, name: true },
+    orderBy: { createdAt: 'asc' },
+  })
   return {
+    admins,
+    masterEmail: process.env.MASTER_EMAIL?.trim().toLowerCase() ?? null,
     seedSalesCount: seedSales._count,
     seedSalesTotal: seedSales._sum.amount ?? 0,
     seedRevenue: {
@@ -267,6 +273,30 @@ export async function POST(req: NextRequest) {
         }
       }
       return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id) })
+    }
+
+    // Concede acesso de Super Admin a uma conta já registrada (para o sócio)
+    if (action === 'grant-admin') {
+      const email = String(body?.email ?? '').trim().toLowerCase()
+      if (!email) return NextResponse.json({ error: 'Informe o e-mail da conta.' }, { status: 400 })
+      const target = await prisma.user.findUnique({ where: { email } })
+      if (!target) {
+        return NextResponse.json(
+          { error: `Nenhuma conta com o e-mail ${email}. Peça para a pessoa criar a conta em /cadastro primeiro (leva 1 minuto).` },
+          { status: 404 },
+        )
+      }
+      await prisma.user.update({ where: { id: target.id }, data: { isAdmin: true } })
+      return NextResponse.json({ ok: true, granted: email, status: await getStatus(admin.id) })
+    }
+
+    if (action === 'revoke-admin') {
+      const email = String(body?.email ?? '').trim().toLowerCase()
+      const master = process.env.MASTER_EMAIL?.trim().toLowerCase()
+      if (email === master) return NextResponse.json({ error: 'O dono (MASTER_EMAIL) não pode ser removido.' }, { status: 400 })
+      if (email === admin.email?.toLowerCase()) return NextResponse.json({ error: 'Você não pode remover a si mesmo.' }, { status: 400 })
+      await prisma.user.updateMany({ where: { email }, data: { isAdmin: false } })
+      return NextResponse.json({ ok: true, revoked: email, status: await getStatus(admin.id) })
     }
 
     if (action === 'clear') {

@@ -10,12 +10,18 @@ export interface PlanUser {
   plan?: string | null
   planStatus?: string | null
   planExpiresAt?: Date | string | null
+  isAdmin?: boolean | null
+}
+
+export function isAdminUser(user: PlanUser): boolean {
+  const master = process.env.MASTER_EMAIL?.trim().toLowerCase()
+  if (master && user.email?.toLowerCase() === master) return true
+  return user.isAdmin === true
 }
 
 export function hasActiveAccess(user: PlanUser): boolean {
-  // O dono (MASTER_EMAIL) sempre tem acesso
-  const master = process.env.MASTER_EMAIL?.trim().toLowerCase()
-  if (master && user.email?.toLowerCase() === master) return true
+  // Administradores (dono + promovidos no Super Admin) sempre têm acesso
+  if (isAdminUser(user)) return true
 
   if (!PAID_PLANS.has(user.plan ?? '')) return false
   if (user.planStatus !== 'active') return false

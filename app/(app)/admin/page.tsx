@@ -9,6 +9,8 @@ import { toast } from 'sonner'
 import { PageHeader, brl } from '@/components/lz/ui'
 
 interface AdminStatus {
+  admins: { email: string; name: string | null }[]
+  masterEmail: string | null
   seedSalesCount: number
   seedSalesTotal: number
   seedRevenue: { today: number; last7: number; last30: number; allTime: number }
@@ -48,6 +50,9 @@ export default function AdminPage() {
   const [stEbooks, setStEbooks] = useState('8')
   const [stLandings, setStLandings] = useState('2')
 
+  // Gestão de administradores
+  const [adminEmail, setAdminEmail] = useState('')
+
   function syncRevenueInputs(s: AdminStatus) {
     setRevToday(fmtBr(s.seedRevenue.today))
     setRev7(fmtBr(s.seedRevenue.last7))
@@ -83,6 +88,8 @@ export default function AdminPage() {
       if (action === 'set-revenue') toast.success(`Faturamento ajustado com ${d.created} vendas de demonstração.`)
       if (action === 'seed-structures') toast.success(d.created ? `${d.created} estruturas demo criadas.` : 'As 5 estruturas demo já existem.')
       if (action === 'clear') toast.success(`Removido: ${d.removed.sales} vendas e ${d.removed.structures} estruturas demo.`)
+      if (action === 'grant-admin') { toast.success(`${d.granted} agora é administrador! 🛡`); setAdminEmail('') }
+      if (action === 'revoke-admin') toast.success(`Acesso de admin removido de ${d.revoked}.`)
       setStatus(d.status)
       syncRevenueInputs(d.status)
     } catch (e: any) {
@@ -230,6 +237,61 @@ export default function AdminPage() {
           <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>
             Marcadas com o sub-nicho “DEMO” (máx. 100). Estruturas reais criadas no wizard somam por cima.
           </p>
+        </div>
+      </div>
+
+      {/* Administradores — acesso do sócio ao Super Admin */}
+      <div className="lz-card p-6 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert size={16} style={{ color: 'var(--purple-soft)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Administradores</p>
+        </div>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          Admins têm acesso a este painel (atalho Ctrl+Shift+A), ao gerenciamento de dados demo e acesso total às
+          ferramentas de IA sem precisar de plano. Para adicionar seu sócio: peça para ele criar uma conta normal em{' '}
+          <code>/cadastro</code> com o e-mail e a senha que ELE escolher, e digite o e-mail dele abaixo.
+        </p>
+
+        <div className="flex gap-2 mb-4">
+          <input
+            value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)}
+            placeholder="email-do-socio@exemplo.com" type="email" className="lz-input flex-1 font-jet text-sm"
+          />
+          <button
+            onClick={() => run('grant-admin', { email: adminEmail })}
+            disabled={busy !== null || !adminEmail.trim()}
+            className="lz-btn-primary !px-5 shrink-0 inline-flex items-center gap-2 text-sm"
+          >
+            {busy === 'grant-admin' ? <Loader2 size={14} className="animate-spin" /> : <ShieldAlert size={14} />}
+            Tornar admin
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {status.masterEmail && (
+            <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+              <span className="text-sm font-jet truncate" style={{ color: 'var(--text-primary)' }}>{status.masterEmail}</span>
+              <span className="lz-badge lz-badge-hot shrink-0">DONO</span>
+            </div>
+          )}
+          {status.admins.filter((a) => a.email.toLowerCase() !== status.masterEmail).map((a) => (
+            <div key={a.email} className="flex items-center justify-between gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+              <span className="text-sm font-jet truncate" style={{ color: 'var(--text-primary)' }}>
+                {a.name ? `${a.name} · ` : ''}{a.email}
+              </span>
+              <button
+                onClick={() => { if (window.confirm(`Remover acesso de admin de ${a.email}?`)) run('revoke-admin', { email: a.email }) }}
+                disabled={busy !== null}
+                className="text-xs px-3 py-1.5 rounded-lg shrink-0"
+                style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171' }}
+              >
+                Remover
+              </button>
+            </div>
+          ))}
+          {status.admins.filter((a) => a.email.toLowerCase() !== status.masterEmail).length === 0 && (
+            <p className="text-xs text-center py-2" style={{ color: 'var(--text-muted)' }}>Nenhum admin adicional ainda.</p>
+          )}
         </div>
       </div>
 

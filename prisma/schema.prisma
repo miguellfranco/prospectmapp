@@ -21,6 +21,7 @@ model User {
   stripeSubscriptionId String?
   referralCode         String    @unique
   referredBy           String?
+  isAdmin              Boolean   @default(false) // acesso ao Super Admin (além do MASTER_EMAIL)
   leadsUsedToday       Int       @default(0)
   leadsResetDate       DateTime  @default(now())
   trackingPixelId      String?   @unique
