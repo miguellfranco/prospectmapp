@@ -5,6 +5,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { caktoConfigured, getCaktoOrder, mapCaktoPlan } from '@/lib/cakto'
 import { grantPlanByEmail } from '@/lib/grant-access'
+import { decryptJson } from '@/lib/crypto'
+
+// Secret esperado do webhook: env manda; senão, o que o setup 1-clique do
+// Super Admin guardou criptografado no banco (AppConfig).
+async function getExpectedSecret(): Promise<string | null> {
+  if (process.env.CAKTO_WEBHOOK_SECRET) return process.env.CAKTO_WEBHOOK_SECRET
+  try {
+    const row = await prisma.appConfig.findUnique({ where: { key: 'cakto_webhook_secret' } })
+    if (!row) return null
+    const data = decryptJson<{ secret?: string }>(row.valueEnc)
+    return data?.secret ?? null
+  } catch (e) {
+    console.error('Cakto webhook: falha ao ler secret do AppConfig:', e)
+    return null
+  }
+}
 
 // Eventos da Cakto que representam dinheiro entrando e devem ativar/renovar acesso.
 const GRANT_EVENTS = new Set(['purchase_approved', 'subscription_created', 'subscription_renewed'])
@@ -28,7 +44,7 @@ export async function POST(req: NextRequest) {
     // fluxo é seguro: nunca confiamos no corpo do webhook — toda venda é
     // reconfirmada na API da Cakto com as nossas credenciais antes de
     // qualquer ativação.
-    const expectedSecret = process.env.CAKTO_WEBHOOK_SECRET
+    const expectedSecret = await getExpectedSecret()
     const receivedSecret = body?.secret ?? body?.data?.secret
     if (expectedSecret && receivedSecret !== expectedSecret) {
       console.warn('Cakto webhook: secret divergente, ignorando')

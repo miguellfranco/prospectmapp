@@ -88,6 +88,14 @@ model CaktoSale {
   @@index([email])
 }
 
+// Configurações internas do app (valores sensíveis entram criptografados
+// com AES-256-GCM via lib/crypto — ex.: secret do webhook da Cakto).
+model AppConfig {
+  key       String   @id
+  valueEnc  String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 model Lead {
   id              String    @id @default(cuid())
   userId          String

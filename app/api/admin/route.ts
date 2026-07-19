@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
+import { caktoConfigured, ensureCaktoSetup } from '@/lib/cakto'
+import { encryptJson } from '@/lib/crypto'
 
 // Painel Super Admin (dev/QA) — exclusivo do MASTER_EMAIL.
 //
@@ -309,6 +311,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         removed: { sales: sales.count, structures: structures.count },
+        status: await getStatus(admin.id),
+      })
+    }
+
+    // Configura o canal de afiliados na Cakto em 1 clique: cria os 3 produtos
+    // dos planos (se faltarem), cadastra o webhook de vendas e guarda o secret
+    // criptografado. Idempotente. A comissão de 50% dos afiliados não existe
+    // na API pública da Cakto — o front mostra o passo a passo manual.
+    if (action === 'cakto-setup') {
+      if (!caktoConfigured()) {
+        return NextResponse.json(
+          { error: 'CAKTO_CLIENT_ID/CAKTO_CLIENT_SECRET não configurados na Vercel.' },
+          { status: 400 },
+        )
+      }
+      const webhookUrl = `${process.env.NEXTAUTH_URL || 'https://extracted-olive.vercel.app'}/api/webhooks/cakto`
+      const result = await ensureCaktoSetup(webhookUrl)
+      if (result.webhook.secret) {
+        await prisma.appConfig.upsert({
+          where: { key: 'cakto_webhook_secret' },
+          update: { valueEnc: encryptJson({ secret: result.webhook.secret }) },
+          create: { key: 'cakto_webhook_secret', valueEnc: encryptJson({ secret: result.webhook.secret }) },
+        })
+      }
+      return NextResponse.json({
+        ok: true,
+        cakto: {
+          products: result.products.map(({ plan, name, id, created }) => ({ plan, name, id, created })),
+          webhook: { id: result.webhook.id, url: result.webhook.url, created: result.webhook.created, secretStored: Boolean(result.webhook.secret) },
+        },
         status: await getStatus(admin.id),
       })
     }

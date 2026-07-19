@@ -53,6 +53,12 @@ export default function AdminPage() {
   // Gestão de administradores
   const [adminEmail, setAdminEmail] = useState('')
 
+  // Resultado do setup 1-clique da Cakto (produtos + webhook)
+  const [caktoResult, setCaktoResult] = useState<{
+    products: { plan: string; name: string; id: string; created: boolean }[]
+    webhook: { id: string; url: string; created: boolean; secretStored: boolean }
+  } | null>(null)
+
   function syncRevenueInputs(s: AdminStatus) {
     setRevToday(fmtBr(s.seedRevenue.today))
     setRev7(fmtBr(s.seedRevenue.last7))
@@ -90,6 +96,7 @@ export default function AdminPage() {
       if (action === 'clear') toast.success(`Removido: ${d.removed.sales} vendas e ${d.removed.structures} estruturas demo.`)
       if (action === 'grant-admin') { toast.success(`${d.granted} agora é administrador! 🛡`); setAdminEmail('') }
       if (action === 'revoke-admin') toast.success(`Acesso de admin removido de ${d.revoked}.`)
+      if (action === 'cakto-setup') { toast.success('Cakto configurada! Produtos e webhook prontos. 🥑'); setCaktoResult(d.cakto) }
       setStatus(d.status)
       syncRevenueInputs(d.status)
     } catch (e: any) {
@@ -238,6 +245,49 @@ export default function AdminPage() {
             Marcadas com o sub-nicho “DEMO” (máx. 100). Estruturas reais criadas no wizard somam por cima.
           </p>
         </div>
+      </div>
+
+      {/* Cakto — canal de afiliados: setup 1-clique dos produtos + webhook */}
+      <div className="lz-card p-6 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Plug size={16} style={{ color: 'var(--purple-soft)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Cakto — canal de afiliados (vender os planos do InfoBook)</p>
+        </div>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          Um clique cria os 3 produtos dos planos na sua conta Cakto (Mensal R$97, Trimestral R$197, Vitalício R$297)
+          e cadastra o webhook que ativa a conta do comprador automaticamente. Pode clicar de novo sem medo: não duplica nada.
+        </p>
+
+        <button
+          onClick={() => run('cakto-setup')}
+          disabled={busy !== null}
+          className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+        >
+          {busy === 'cakto-setup' ? <Loader2 size={15} className="animate-spin" /> : <Plug size={15} />}
+          Configurar Cakto agora (produtos + webhook)
+        </button>
+
+        {caktoResult && (
+          <div className="mt-4 space-y-3">
+            <div className="p-3 rounded-xl text-xs space-y-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+              {caktoResult.products.map((p) => (
+                <p key={p.plan} style={{ color: 'var(--text-primary)' }}>
+                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}
+                </p>
+              ))}
+              <p style={{ color: 'var(--text-primary)' }}>
+                ✅ Webhook de ativação — {caktoResult.webhook.created ? 'cadastrado agora' : 'já existia'}
+                {caktoResult.webhook.secretStored ? ' (secret guardado com segurança)' : ''}
+              </p>
+            </div>
+            <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text-secondary)' }}>
+              <p className="font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>⚠️ Último passo (a API da Cakto não faz isso — são 2 cliques por produto):</p>
+              <p>1. Entre em <strong>app.cakto.com.br → Produtos</strong></p>
+              <p>2. Abra cada um dos 3 produtos → aba <strong>Afiliados</strong> → <strong>Ativar programa de afiliados</strong> → comissão <strong>50%</strong> → Salvar</p>
+              <p className="mt-1.5">Pronto: cada afiliado aprovado ganha um link próprio e a Cakto divide a comissão automaticamente.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Administradores — acesso do sócio ao Super Admin */}

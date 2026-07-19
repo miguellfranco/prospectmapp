@@ -74,6 +74,123 @@ export async function getCaktoOrder(orderId: string): Promise<CaktoOrder | null>
   }
 }
 
+// Respostas de listagem da Cakto podem vir como array direto ou paginadas
+// no formato Django ({ results: [...] }).
+function unwrapList(data: any): any[] {
+  if (Array.isArray(data)) return data
+  if (Array.isArray(data?.results)) return data.results
+  return []
+}
+
+async function caktoGet(path: string): Promise<any> {
+  const token = await getCaktoToken()
+  const res = await fetch(`${CAKTO_API}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Cakto GET ${path} ${res.status}: ${body.slice(0, 300)}`)
+  }
+  return res.json()
+}
+
+async function caktoPost(path: string, payload: any): Promise<any> {
+  const token = await getCaktoToken()
+  const res = await fetch(`${CAKTO_API}${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Cakto POST ${path} ${res.status}: ${body.slice(0, 300)}`)
+  }
+  return res.json()
+}
+
+export async function listCaktoProducts(): Promise<any[]> {
+  return unwrapList(await caktoGet('/public_api/products/'))
+}
+
+export async function createCaktoProduct(input: { name: string; description: string; price: number }): Promise<any> {
+  return caktoPost('/public_api/products/', {
+    name: input.name,
+    description: input.description,
+    price: input.price.toFixed(2),
+    type: 'unique',
+    guarantee: 7, // garantia de 7 dias (direito de arrependimento do CDC)
+  })
+}
+
+export async function listCaktoWebhooks(): Promise<any[]> {
+  return unwrapList(await caktoGet('/public_api/webhook/'))
+}
+
+export async function createCaktoWebhook(input: { name: string; url: string; products: string[]; events: string[] }): Promise<any> {
+  return caktoPost('/public_api/webhook/', input)
+}
+
+export interface CaktoSetupResult {
+  products: { plan: string; name: string; id: string; created: boolean }[]
+  webhook: { id: string; url: string; created: boolean; secret: string | null }
+}
+
+// Configuração 1-clique do canal de afiliados: garante os 3 produtos dos
+// planos e o webhook de vendas apontando para o app. Idempotente — rodar de
+// novo não duplica nada. A comissão de afiliados (50%) não existe na API
+// pública da Cakto e precisa ser ativada manualmente no painel deles.
+export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupResult> {
+  const PLAN_PRODUCTS = [
+    { plan: 'mensal', name: 'InfoBook — Plano Mensal', price: 97, description: 'Acesso de 30 dias ao InfoBook: crie e-books, páginas de venda e mensagens de divulgação com IA, tudo em um funil completo de 4 passos.' },
+    { plan: 'trimestral', name: 'InfoBook — Plano Trimestral', price: 197, description: 'Acesso de 90 dias ao InfoBook: crie e-books, páginas de venda e mensagens de divulgação com IA, tudo em um funil completo de 4 passos. Economize 32% em relação ao mensal.' },
+    { plan: 'vitalicio', name: 'InfoBook — Plano Vitalício', price: 297, description: 'Acesso vitalício ao InfoBook: pague uma única vez e crie e-books, páginas de venda e mensagens de divulgação com IA para sempre.' },
+  ]
+
+  const existing = await listCaktoProducts()
+  const products: CaktoSetupResult['products'] = []
+  for (const p of PLAN_PRODUCTS) {
+    const found = existing.find((e: any) => mapCaktoPlan(e?.name, null) === p.plan)
+    if (found?.id != null) {
+      products.push({ plan: p.plan, name: found.name, id: String(found.id), created: false })
+    } else {
+      const created = await createCaktoProduct(p)
+      products.push({ plan: p.plan, name: p.name, id: String(created.id), created: true })
+    }
+  }
+
+  const webhooks = await listCaktoWebhooks()
+  const foundHook = webhooks.find((w: any) => String(w?.url ?? '').trim() === webhookUrl)
+  if (foundHook?.id != null) {
+    return {
+      products,
+      webhook: {
+        id: String(foundHook.id),
+        url: webhookUrl,
+        created: false,
+        secret: foundHook?.fields?.secret ?? foundHook?.secret ?? null,
+      },
+    }
+  }
+
+  const createdHook = await createCaktoWebhook({
+    name: 'InfoBook — ativação automática de planos',
+    url: webhookUrl,
+    products: products.map((p) => p.id),
+    events: ['purchase_approved', 'subscription_created', 'subscription_renewed'],
+  })
+  return {
+    products,
+    webhook: {
+      id: String(createdHook.id),
+      url: webhookUrl,
+      created: true,
+      secret: createdHook?.fields?.secret ?? createdHook?.secret ?? null,
+    },
+  }
+}
+
 // Descobre qual plano do InfoBook a venda representa. Primeiro pelo nome do
 // produto na Cakto (por isso os produtos DEVEM conter Mensal/Trimestral/
 // Vitalício no nome), depois pelo valor como plano B.
