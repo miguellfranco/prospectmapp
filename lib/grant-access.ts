@@ -15,16 +15,13 @@ function genReferralCode(len = 8) {
   return s
 }
 
-// Called once a PixPayment is confirmed PAID (from the webhook, or the status
-// polling fallback). Idempotent: PixPayment.accessGrantedAt guards against
-// double-processing if both the webhook and the polling fallback fire.
-export async function grantAccessForPayment(paymentId: string) {
-  const payment = await prisma.pixPayment.findUnique({ where: { id: paymentId } })
-  if (!payment) throw new Error(`PixPayment ${paymentId} not found`)
-  if (payment.accessGrantedAt) return // already processed
-
-  const durationDays = PLAN_DURATION_DAYS[payment.plan] ?? 30
-  const existingUser = await prisma.user.findUnique({ where: { email: payment.email } })
+// Core plan-granting logic, shared by every payment source (AbacatePay
+// webhook/polling, Cakto webhook). Creates the account if needed (random
+// password), stacks renewal time on top of unexpired plans, and emails access.
+export async function grantPlanByEmail(params: { email: string; plan: string; phone?: string | null; name?: string | null }) {
+  const email = params.email.trim().toLowerCase()
+  const durationDays = PLAN_DURATION_DAYS[params.plan] ?? 30
+  const existingUser = await prisma.user.findUnique({ where: { email } })
 
   let user
   let plainPassword: string | null = null
@@ -40,10 +37,10 @@ export async function grantAccessForPayment(paymentId: string) {
     user = await prisma.user.update({
       where: { id: existingUser.id },
       data: {
-        plan: payment.plan,
+        plan: params.plan,
         planStatus: 'active',
         planExpiresAt: newExpiry,
-        whatsappNumber: existingUser.whatsappNumber || payment.phone,
+        whatsappNumber: existingUser.whatsappNumber || params.phone || undefined,
       },
     })
   } else {
@@ -58,29 +55,42 @@ export async function grantAccessForPayment(paymentId: string) {
     }
     user = await prisma.user.create({
       data: {
-        email: payment.email,
-        name: payment.email.split('@')[0],
+        email,
+        name: params.name?.trim() || email.split('@')[0],
         passwordHash,
-        plan: payment.plan,
+        plan: params.plan,
         planStatus: 'active',
         planExpiresAt: new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000),
-        whatsappNumber: payment.phone,
+        whatsappNumber: params.phone || null,
         referralCode,
         leadsResetDate: new Date(),
       },
     })
   }
 
+  await sendAccessEmail({
+    to: email,
+    planLabel: PLAN_LABELS[params.plan] ?? params.plan,
+    isNewAccount,
+    password: plainPassword,
+  })
+
+  return { user, isNewAccount }
+}
+
+// Called once a PixPayment is confirmed PAID (from the webhook, or the status
+// polling fallback). Idempotent: PixPayment.accessGrantedAt guards against
+// double-processing if both the webhook and the polling fallback fire.
+export async function grantAccessForPayment(paymentId: string) {
+  const payment = await prisma.pixPayment.findUnique({ where: { id: paymentId } })
+  if (!payment) throw new Error(`PixPayment ${paymentId} not found`)
+  if (payment.accessGrantedAt) return // already processed
+
+  const { user } = await grantPlanByEmail({ email: payment.email, plan: payment.plan, phone: payment.phone })
+
   await prisma.pixPayment.update({
     where: { id: payment.id },
     data: { status: 'paid', paidAt: new Date(), accessGrantedAt: new Date(), userId: user.id },
-  })
-
-  await sendAccessEmail({
-    to: payment.email,
-    planLabel: PLAN_LABELS[payment.plan] ?? payment.plan,
-    isNewAccount,
-    password: plainPassword,
   })
 
   return user

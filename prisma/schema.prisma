@@ -69,6 +69,25 @@ model PixPayment {
   @@index([status])
 }
 
+// Vendas dos planos do InfoBook feitas pela Cakto (canal de afiliados).
+// caktoOrderId único = idempotência: o webhook pode chegar repetido sem
+// duplicar ativação de conta.
+model CaktoSale {
+  id              String    @id @default(cuid())
+  caktoOrderId    String    @unique
+  event           String    // purchase_approved | subscription_renewed | ...
+  email           String
+  plan            String    // mensal | trimestral | anual | vitalicio
+  productName     String?
+  amount          Int?      // em centavos
+  status          String    @default("pending") // pending | granted | ignored
+  accessGrantedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+}
+
 model Lead {
   id              String    @id @default(cuid())
   userId          String

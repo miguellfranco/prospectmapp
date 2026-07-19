@@ -22,7 +22,7 @@ export async function sendAccessEmail({ to, planLabel, isNewAccount, password }:
 
   const resend = new Resend(apiKey)
 
-  const subject = isNewAccount ? 'Seu acesso ao ProspectMap está pronto!' : 'Pagamento confirmado — plano renovado!'
+  const subject = isNewAccount ? 'Seu acesso ao InfoBook está pronto!' : 'Pagamento confirmado — plano renovado!'
   const html = isNewAccount
     ? `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
