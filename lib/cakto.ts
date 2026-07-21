@@ -156,6 +156,9 @@ export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupRe
       products.push({ plan: p.plan, name: found.name, id: String(found.id), created: false })
     } else {
       const created = await createCaktoProduct(p)
+      if (created?.id == null) {
+        throw new Error(`Cakto criou o produto "${p.name}" mas não devolveu um id na resposta (resposta: ${JSON.stringify(created).slice(0, 200)}). Verifique manualmente no painel da Cakto.`)
+      }
       products.push({ plan: p.plan, name: p.name, id: String(created.id), created: true })
     }
   }
@@ -189,6 +192,16 @@ export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupRe
       secret: createdHook?.fields?.secret ?? createdHook?.secret ?? null,
     },
   }
+}
+
+// Links de checkout da Cakto por plano. A API pública da Cakto não expõe a
+// URL de compra (`pay.cakto.com.br/...`) — ela só aparece no painel deles
+// (Produto → aba "Links"). Por isso o admin cola manualmente aqui, uma vez,
+// e o site usa esse valor para redirecionar o comprador direto pro checkout.
+export const CAKTO_CHECKOUT_URL_KEYS: Record<string, string> = {
+  mensal: 'cakto_checkout_mensal',
+  trimestral: 'cakto_checkout_trimestral',
+  vitalicio: 'cakto_checkout_vitalicio',
 }
 
 // Descobre qual plano do InfoBook a venda representa. Primeiro pelo nome do

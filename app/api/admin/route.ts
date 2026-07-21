@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
-import { caktoConfigured, ensureCaktoSetup } from '@/lib/cakto'
-import { encryptJson } from '@/lib/crypto'
+import { caktoConfigured, ensureCaktoSetup, CAKTO_CHECKOUT_URL_KEYS } from '@/lib/cakto'
+import { encryptJson, decryptJson } from '@/lib/crypto'
 
 // Painel Super Admin (dev/QA) — exclusivo do MASTER_EMAIL.
 //
@@ -64,8 +64,21 @@ async function getStatus(userId: string) {
     select: { email: true, name: true },
     orderBy: { createdAt: 'asc' },
   })
+  const caktoConfigRows = await prisma.appConfig.findMany({
+    where: { key: { in: Object.values(CAKTO_CHECKOUT_URL_KEYS) } },
+  })
+  const caktoCheckoutUrls: Record<string, string> = {}
+  for (const [plan, key] of Object.entries(CAKTO_CHECKOUT_URL_KEYS)) {
+    const row = caktoConfigRows.find((r) => r.key === key)
+    if (!row) continue
+    try {
+      const data = decryptJson<{ url?: string }>(row.valueEnc)
+      if (data?.url) caktoCheckoutUrls[plan] = data.url
+    } catch { /* ignora valor corrompido */ }
+  }
   return {
     admins,
+    caktoCheckoutUrls,
     masterEmail: process.env.MASTER_EMAIL?.trim().toLowerCase() ?? null,
     seedSalesCount: seedSales._count,
     seedSalesTotal: seedSales._sum.amount ?? 0,
@@ -345,9 +358,41 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Salva os links de checkout da Cakto (copiados manualmente do painel
+    // deles, aba Links de cada produto) — usados pelos botões "Assinar" do
+    // site para redirecionar direto ao pagamento, no lugar do AbacatePay.
+    if (action === 'set-cakto-checkout-urls') {
+      const entries = Object.entries(CAKTO_CHECKOUT_URL_KEYS)
+      for (const [plan, key] of entries) {
+        const raw = body?.[plan]
+        if (raw === undefined) continue
+        const url = String(raw).trim()
+        if (!url) {
+          await prisma.appConfig.deleteMany({ where: { key } })
+          continue
+        }
+        if (!/^https?:\/\/.+/.test(url)) {
+          return NextResponse.json({ error: `Link inválido para o plano ${plan}: precisa começar com http:// ou https://` }, { status: 400 })
+        }
+        await prisma.appConfig.upsert({
+          where: { key },
+          update: { valueEnc: encryptJson({ url }) },
+          create: { key, valueEnc: encryptJson({ url }) },
+        })
+      }
+      return NextResponse.json({ ok: true, status: await getStatus(admin.id) })
+    }
+
     return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Erro na ação admin:', e)
-    return NextResponse.json({ error: 'Erro ao executar a ação.' }, { status: 500 })
+    // Painel interno de admin — expor a mensagem real do erro (em vez de um
+    // genérico) é seguro aqui e essencial para diagnosticar problemas de
+    // integração externa (ex.: Cakto) sem depender dos logs da Vercel.
+    const detail = e?.message ? String(e.message) : null
+    return NextResponse.json(
+      { error: detail ? `Erro ao executar a ação: ${detail}` : 'Erro ao executar a ação.' },
+      { status: 500 },
+    )
   }
 }

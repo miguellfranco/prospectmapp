@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -14,6 +14,23 @@ export default function InfoBookLanding() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
+
+  // Links de checkout da Cakto (gateway principal enquanto o AbacatePay está
+  // em Dev Mode). Se um plano ainda não tiver link configurado no Super
+  // Admin, o botão cai de volta no fluxo antigo (modal PIX/cartão AbacatePay).
+  const [caktoUrls, setCaktoUrls] = useState<Record<string, string | null>>({})
+  useEffect(() => {
+    fetch('/api/public/cakto-checkout')
+      .then((r) => r.json())
+      .then((d) => { if (d?.ok) setCaktoUrls(d.urls || {}) })
+      .catch(() => {})
+  }, [])
+
+  function handleSubscribe(plan: string) {
+    const url = caktoUrls[plan]
+    if (url) { window.location.href = url; return }
+    setCheckoutPlan(plan)
+  }
 
   const steps = [
     {
@@ -360,7 +377,7 @@ export default function InfoBookLanding() {
                   ))}
                 </ul>
 
-                <button onClick={() => setCheckoutPlan('mensal')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
+                <button onClick={() => handleSubscribe('mensal')} className="block w-full py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center font-bold text-white transition-colors">
                   ASSINAR MENSAL
                 </button>
               </motion.div>
@@ -399,7 +416,7 @@ export default function InfoBookLanding() {
                   ))}
                 </ul>
 
-                <button onClick={() => setCheckoutPlan('trimestral')} className="block w-full py-3.5 rounded-xl border border-violet-500/40 bg-violet-950/20 hover:bg-violet-950/40 text-center font-bold text-white transition-colors">
+                <button onClick={() => handleSubscribe('trimestral')} className="block w-full py-3.5 rounded-xl border border-violet-500/40 bg-violet-950/20 hover:bg-violet-950/40 text-center font-bold text-white transition-colors">
                   ASSINAR TRIMESTRAL
                 </button>
               </motion.div>
@@ -445,7 +462,7 @@ export default function InfoBookLanding() {
                   </ul>
                 </div>
 
-                <button onClick={() => setCheckoutPlan('vitalicio')} className="block w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-violet-800 hover:from-violet-500 hover:to-violet-700 text-center font-black text-white transition-colors shadow-[0_0_25px_rgba(124,58,237,0.4)]">
+                <button onClick={() => handleSubscribe('vitalicio')} className="block w-full py-4 rounded-xl bg-gradient-to-r from-violet-600 to-violet-800 hover:from-violet-500 hover:to-violet-700 text-center font-black text-white transition-colors shadow-[0_0_25px_rgba(124,58,237,0.4)]">
                   GARANTIR ACESSO VITALÍCIO
                 </button>
               </motion.div>

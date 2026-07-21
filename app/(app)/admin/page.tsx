@@ -16,6 +16,7 @@ interface AdminStatus {
   seedRevenue: { today: number; last7: number; last30: number; allTime: number }
   demoStructuresCount: number
   app: { users: number; structures: number; sales: number; integrations: number }
+  caktoCheckoutUrls: Record<string, string>
 }
 
 function fmtBr(n: number): string {
@@ -59,11 +60,19 @@ export default function AdminPage() {
     webhook: { id: string; url: string; created: boolean; secretStored: boolean }
   } | null>(null)
 
+  // Links de checkout da Cakto por plano (colados manualmente do painel deles)
+  const [caktoUrlMensal, setCaktoUrlMensal] = useState('')
+  const [caktoUrlTrimestral, setCaktoUrlTrimestral] = useState('')
+  const [caktoUrlVitalicio, setCaktoUrlVitalicio] = useState('')
+
   function syncRevenueInputs(s: AdminStatus) {
     setRevToday(fmtBr(s.seedRevenue.today))
     setRev7(fmtBr(s.seedRevenue.last7))
     setRev30(fmtBr(s.seedRevenue.last30))
     setRevAll(fmtBr(s.seedRevenue.allTime))
+    setCaktoUrlMensal(s.caktoCheckoutUrls?.mensal ?? '')
+    setCaktoUrlTrimestral(s.caktoCheckoutUrls?.trimestral ?? '')
+    setCaktoUrlVitalicio(s.caktoCheckoutUrls?.vitalicio ?? '')
   }
 
   function load() {
@@ -97,6 +106,7 @@ export default function AdminPage() {
       if (action === 'grant-admin') { toast.success(`${d.granted} agora é administrador! 🛡`); setAdminEmail('') }
       if (action === 'revoke-admin') toast.success(`Acesso de admin removido de ${d.revoked}.`)
       if (action === 'cakto-setup') { toast.success('Cakto configurada! Produtos e webhook prontos. 🥑'); setCaktoResult(d.cakto) }
+      if (action === 'set-cakto-checkout-urls') toast.success('Links de checkout salvos! O site já vai usá-los.')
       setStatus(d.status)
       syncRevenueInputs(d.status)
     } catch (e: any) {
@@ -288,6 +298,36 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        <div className="h-px my-5" style={{ background: 'var(--border-default)' }} />
+
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Links de checkout (gateway de pagamento do site)</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          A API da Cakto não entrega o link de compra pronto — copie você mesmo em <strong>app.cakto.com.br → Produtos → abra o produto → aba Links → "Link de checkout"</strong>
+          e cole abaixo. Assim que salvar, os botões "Assinar" do site redirecionam direto para o checkout da Cakto (no lugar do AbacatePay).
+        </p>
+        <div className="space-y-3 mb-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Mensal — R$97</label>
+            <input value={caktoUrlMensal} onChange={(e) => setCaktoUrlMensal(e.target.value)} placeholder="https://pay.cakto.com.br/..." className="lz-input !py-2.5 font-jet text-sm w-full" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Trimestral — R$197</label>
+            <input value={caktoUrlTrimestral} onChange={(e) => setCaktoUrlTrimestral(e.target.value)} placeholder="https://pay.cakto.com.br/..." className="lz-input !py-2.5 font-jet text-sm w-full" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-secondary)' }}>Vitalício — R$297</label>
+            <input value={caktoUrlVitalicio} onChange={(e) => setCaktoUrlVitalicio(e.target.value)} placeholder="https://pay.cakto.com.br/..." className="lz-input !py-2.5 font-jet text-sm w-full" />
+          </div>
+        </div>
+        <button
+          onClick={() => run('set-cakto-checkout-urls', { mensal: caktoUrlMensal, trimestral: caktoUrlTrimestral, vitalicio: caktoUrlVitalicio })}
+          disabled={busy !== null}
+          className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+        >
+          {busy === 'set-cakto-checkout-urls' ? <Loader2 size={15} className="animate-spin" /> : <ShoppingCart size={15} />}
+          Salvar links de checkout
+        </button>
       </div>
 
       {/* Administradores — acesso do sócio ao Super Admin */}
