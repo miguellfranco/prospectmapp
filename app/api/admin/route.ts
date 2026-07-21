@@ -352,7 +352,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         cakto: {
-          products: result.products.map(({ plan, name, id, created, affiliateEnabled }) => ({ plan, name, id, created, affiliateEnabled })),
+          products: result.products.map(({ plan, name, id, created, affiliateEnabled, affiliateError }) => ({ plan, name, id, created, affiliateEnabled, affiliateError })),
           webhook: { id: result.webhook.id, url: result.webhook.url, created: result.webhook.created, secretStored: Boolean(result.webhook.secret) },
         },
         status: await getStatus(admin.id),

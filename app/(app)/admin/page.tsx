@@ -56,7 +56,7 @@ export default function AdminPage() {
 
   // Resultado do setup 1-clique da Cakto (produtos + webhook + afiliados)
   const [caktoResult, setCaktoResult] = useState<{
-    products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean }[]
+    products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean; affiliateError: string | null }[]
     webhook: { id: string; url: string; created: boolean; secretStored: boolean }
   } | null>(null)
 
@@ -285,9 +285,14 @@ export default function AdminPage() {
           <div className="mt-4 space-y-3">
             <div className="p-3 rounded-xl text-xs space-y-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
               {caktoResult.products.map((p) => (
-                <p key={p.plan} style={{ color: 'var(--text-primary)' }}>
-                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}, afiliados {p.affiliateEnabled ? 'ativos a 50% + entrega de acesso configurada' : '⚠️ não confirmado (veja no painel da Cakto)'}
-                </p>
+                <div key={p.plan}>
+                  <p style={{ color: 'var(--text-primary)' }}>
+                    {p.affiliateEnabled ? '✅' : '❌'} {p.name} — {p.created ? 'criado agora' : 'já existia'}, afiliados {p.affiliateEnabled ? 'ativos a 50% + entrega de acesso configurada' : 'FALHOU'}
+                  </p>
+                  {p.affiliateError && (
+                    <p className="mt-0.5" style={{ color: '#f87171' }}>Erro da Cakto: {p.affiliateError}</p>
+                  )}
+                </div>
               ))}
               <p style={{ color: 'var(--text-primary)' }}>
                 ✅ Webhook de ativação — {caktoResult.webhook.created ? 'cadastrado agora' : 'já existia'}

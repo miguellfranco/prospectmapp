@@ -156,6 +156,7 @@ export async function configureCaktoProduct(productId: string, siteUrl: string, 
     affiliateRequest: true,
     cookieTime: 30,
     affiliateSalesPage: siteUrl,
+    producerName: 'Miguel Franco',
     contentDeliveries: ['emailAccess'],
     emailAccessLink: `${siteUrl}/login`,
   })
@@ -170,7 +171,7 @@ export async function createCaktoWebhook(input: { name: string; url: string; pro
 }
 
 export interface CaktoSetupResult {
-  products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean }[]
+  products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean; affiliateError: string | null }[]
   webhook: { id: string; url: string; created: boolean; secret: string | null }
 }
 
@@ -208,14 +209,16 @@ export async function ensureCaktoSetup(webhookUrl: string, salesPageUrl: string)
     }
 
     let affiliateEnabled = false
+    let affiliateError: string | null = null
     try {
       await configureCaktoProduct(id, salesPageUrl, 50)
       affiliateEnabled = true
-    } catch (e) {
+    } catch (e: any) {
+      affiliateError = String(e?.message ?? e)
       console.error(`Cakto: falha ao ativar afiliados no produto ${name} (${id}):`, e)
     }
 
-    products.push({ plan: p.plan, name, id, created, affiliateEnabled })
+    products.push({ plan: p.plan, name, id, created, affiliateEnabled, affiliateError })
   }
 
   const webhooks = await listCaktoWebhooks()
