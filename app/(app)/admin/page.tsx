@@ -265,10 +265,11 @@ export default function AdminPage() {
         </div>
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
           Um clique faz tudo que a API da Cakto permite: cria os 3 produtos dos planos (Mensal R$97, Trimestral R$197,
-          Vitalício R$297), <strong style={{ color: 'var(--text-primary)' }}>ativa o programa de afiliados com 50% de comissão</strong> em
-          cada um <strong style={{ color: 'var(--text-primary)' }}>já apontando o link do afiliado para a home do InfoBook</strong> (com
-          os 3 planos, em vez do checkout de 1 produto só), e cadastra o webhook que ativa a conta do comprador
-          automaticamente — sem você precisar entrar na Cakto. Pode clicar de novo sem medo: não duplica nada, só reforça a configuração.
+          Vitalício R$297), <strong style={{ color: 'var(--text-primary)' }}>ativa o programa de afiliados com 50% de comissão</strong> já
+          apontando o link do afiliado para a home do InfoBook (com os 3 planos, em vez do checkout de 1 produto só),
+          <strong style={{ color: 'var(--text-primary)' }}> configura a "Entrega" de cada produto</strong> para o link de acesso/login do
+          InfoBook, e cadastra o webhook que ativa a conta do comprador automaticamente — tudo sem você precisar entrar na Cakto.
+          Pode clicar de novo sem medo: não duplica nada, só reforça a configuração.
         </p>
 
         <button
@@ -285,7 +286,7 @@ export default function AdminPage() {
             <div className="p-3 rounded-xl text-xs space-y-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
               {caktoResult.products.map((p) => (
                 <p key={p.plan} style={{ color: 'var(--text-primary)' }}>
-                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}, afiliados {p.affiliateEnabled ? 'ativos a 50%' : '⚠️ não confirmado (veja no painel da Cakto)'}
+                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}, afiliados {p.affiliateEnabled ? 'ativos a 50% + entrega de acesso configurada' : '⚠️ não confirmado (veja no painel da Cakto)'}
                 </p>
               ))}
               <p style={{ color: 'var(--text-primary)' }}>

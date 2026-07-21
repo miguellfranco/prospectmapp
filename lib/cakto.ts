@@ -139,20 +139,25 @@ export async function createCaktoProduct(input: { name: string; description: str
   })
 }
 
-// Liga o programa de afiliados no produto com comissão de 50%. affiliateRequest
-// true = cada afiliado precisa ser aprovado manualmente no painel da Cakto
-// (recomendado, evita gente aleatória se afiliando); cookieTime 30 dias.
-// affiliateSalesPage aponta o link que a Cakto entrega a cada afiliado para a
-// NOSSA home (com os 3 planos) em vez do checkout de 1 produto só — é o campo
-// que resolve o pedido do usuário de "link do afiliado leva pra página de
-// vendas, e qualquer um dos 3 planos comprado já conta a comissão".
-export async function enableCaktoAffiliates(productId: string, salesPageUrl: string, commissionPercent = 50): Promise<any> {
+// Configura tudo que o produto precisa pra funcionar sozinho:
+// - Afiliados a 50% (affiliateRequest true = cada afiliado precisa ser
+//   aprovado manualmente no painel, evitando gente aleatória se afiliando),
+//   com o link do afiliado apontando para a NOSSA home (3 planos) em vez do
+//   checkout de 1 produto só (affiliateSalesPage).
+// - Entrega ("Como o comprador recebe acesso"): emailAccess = a Cakto manda
+//   um e-mail com o link de acesso. Isso é só um reforço — quem realmente cria
+//   a conta e manda a senha é o NOSSO webhook (grant-access.ts), então aqui
+//   só apontamos o link para a tela de login, caso o comprador use o e-mail
+//   da própria Cakto para entrar.
+export async function configureCaktoProduct(productId: string, siteUrl: string, commissionPercent = 50): Promise<any> {
   return caktoPatch(`/public_api/products/${encodeURIComponent(productId)}/`, {
     affiliate: true,
     affiliateCommission: commissionPercent,
     affiliateRequest: true,
     cookieTime: 30,
-    affiliateSalesPage: salesPageUrl,
+    affiliateSalesPage: siteUrl,
+    contentDeliveries: ['emailAccess'],
+    emailAccessLink: `${siteUrl}/login`,
   })
 }
 
@@ -204,7 +209,7 @@ export async function ensureCaktoSetup(webhookUrl: string, salesPageUrl: string)
 
     let affiliateEnabled = false
     try {
-      await enableCaktoAffiliates(id, salesPageUrl, 50)
+      await configureCaktoProduct(id, salesPageUrl, 50)
       affiliateEnabled = true
     } catch (e) {
       console.error(`Cakto: falha ao ativar afiliados no produto ${name} (${id}):`, e)
