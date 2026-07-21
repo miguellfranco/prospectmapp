@@ -110,6 +110,21 @@ async function caktoPost(path: string, payload: any): Promise<any> {
   return res.json()
 }
 
+async function caktoPatch(path: string, payload: any): Promise<any> {
+  const token = await getCaktoToken()
+  const res = await fetch(`${CAKTO_API}${path}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`Cakto PATCH ${path} ${res.status}: ${body.slice(0, 300)}`)
+  }
+  return res.json()
+}
+
 export async function listCaktoProducts(): Promise<any[]> {
   return unwrapList(await caktoGet('/public_api/products/'))
 }
@@ -124,6 +139,18 @@ export async function createCaktoProduct(input: { name: string; description: str
   })
 }
 
+// Liga o programa de afiliados no produto com comissão de 50%. affiliateRequest
+// true = cada afiliado precisa ser aprovado manualmente no painel da Cakto
+// (recomendado, evita gente aleatória se afiliando); cookieTime 30 dias.
+export async function enableCaktoAffiliates(productId: string, commissionPercent = 50): Promise<any> {
+  return caktoPatch(`/public_api/products/${encodeURIComponent(productId)}/`, {
+    affiliate: true,
+    affiliateCommission: commissionPercent,
+    affiliateRequest: true,
+    cookieTime: 30,
+  })
+}
+
 export async function listCaktoWebhooks(): Promise<any[]> {
   return unwrapList(await caktoGet('/public_api/webhook/'))
 }
@@ -133,14 +160,14 @@ export async function createCaktoWebhook(input: { name: string; url: string; pro
 }
 
 export interface CaktoSetupResult {
-  products: { plan: string; name: string; id: string; created: boolean }[]
+  products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean }[]
   webhook: { id: string; url: string; created: boolean; secret: string | null }
 }
 
 // Configuração 1-clique do canal de afiliados: garante os 3 produtos dos
-// planos e o webhook de vendas apontando para o app. Idempotente — rodar de
-// novo não duplica nada. A comissão de afiliados (50%) não existe na API
-// pública da Cakto e precisa ser ativada manualmente no painel deles.
+// planos com afiliados ativos a 50% de comissão, e o webhook de vendas
+// apontando para o app. Idempotente — rodar de novo não duplica nada e só
+// reforça a comissão de 50% (caso alguém tenha mudado no painel da Cakto).
 export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupResult> {
   const PLAN_PRODUCTS = [
     { plan: 'mensal', name: 'InfoBook — Plano Mensal', price: 97, description: 'Acesso de 30 dias ao InfoBook: crie e-books, páginas de venda e mensagens de divulgação com IA, tudo em um funil completo de 4 passos.' },
@@ -152,15 +179,32 @@ export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupRe
   const products: CaktoSetupResult['products'] = []
   for (const p of PLAN_PRODUCTS) {
     const found = existing.find((e: any) => mapCaktoPlan(e?.name, null) === p.plan)
+    let id: string
+    let name: string
+    let created: boolean
     if (found?.id != null) {
-      products.push({ plan: p.plan, name: found.name, id: String(found.id), created: false })
+      id = String(found.id)
+      name = found.name
+      created = false
     } else {
-      const created = await createCaktoProduct(p)
-      if (created?.id == null) {
-        throw new Error(`Cakto criou o produto "${p.name}" mas não devolveu um id na resposta (resposta: ${JSON.stringify(created).slice(0, 200)}). Verifique manualmente no painel da Cakto.`)
+      const createdProduct = await createCaktoProduct(p)
+      if (createdProduct?.id == null) {
+        throw new Error(`Cakto criou o produto "${p.name}" mas não devolveu um id na resposta (resposta: ${JSON.stringify(createdProduct).slice(0, 200)}). Verifique manualmente no painel da Cakto.`)
       }
-      products.push({ plan: p.plan, name: p.name, id: String(created.id), created: true })
+      id = String(createdProduct.id)
+      name = p.name
+      created = true
     }
+
+    let affiliateEnabled = false
+    try {
+      await enableCaktoAffiliates(id, 50)
+      affiliateEnabled = true
+    } catch (e) {
+      console.error(`Cakto: falha ao ativar afiliados no produto ${name} (${id}):`, e)
+    }
+
+    products.push({ plan: p.plan, name, id, created, affiliateEnabled })
   }
 
   const webhooks = await listCaktoWebhooks()

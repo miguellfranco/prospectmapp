@@ -54,9 +54,9 @@ export default function AdminPage() {
   // Gestão de administradores
   const [adminEmail, setAdminEmail] = useState('')
 
-  // Resultado do setup 1-clique da Cakto (produtos + webhook)
+  // Resultado do setup 1-clique da Cakto (produtos + webhook + afiliados)
   const [caktoResult, setCaktoResult] = useState<{
-    products: { plan: string; name: string; id: string; created: boolean }[]
+    products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean }[]
     webhook: { id: string; url: string; created: boolean; secretStored: boolean }
   } | null>(null)
 
@@ -264,8 +264,10 @@ export default function AdminPage() {
           <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Cakto — canal de afiliados (vender os planos do InfoBook)</p>
         </div>
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-          Um clique cria os 3 produtos dos planos na sua conta Cakto (Mensal R$97, Trimestral R$197, Vitalício R$297)
-          e cadastra o webhook que ativa a conta do comprador automaticamente. Pode clicar de novo sem medo: não duplica nada.
+          Um clique faz tudo que a API da Cakto permite: cria os 3 produtos dos planos (Mensal R$97, Trimestral R$197,
+          Vitalício R$297), <strong style={{ color: 'var(--text-primary)' }}>ativa o programa de afiliados com 50% de comissão</strong> em
+          cada um, e cadastra o webhook que ativa a conta do comprador automaticamente — sem você precisar entrar na Cakto.
+          Pode clicar de novo sem medo: não duplica nada, só reforça a configuração.
         </p>
 
         <button
@@ -274,7 +276,7 @@ export default function AdminPage() {
           className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
         >
           {busy === 'cakto-setup' ? <Loader2 size={15} className="animate-spin" /> : <Plug size={15} />}
-          Configurar Cakto agora (produtos + webhook)
+          Configurar Cakto agora (produtos + afiliados 50% + webhook)
         </button>
 
         {caktoResult && (
@@ -282,7 +284,7 @@ export default function AdminPage() {
             <div className="p-3 rounded-xl text-xs space-y-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
               {caktoResult.products.map((p) => (
                 <p key={p.plan} style={{ color: 'var(--text-primary)' }}>
-                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}
+                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}, afiliados {p.affiliateEnabled ? 'ativos a 50%' : '⚠️ não confirmado (veja no painel da Cakto)'}
                 </p>
               ))}
               <p style={{ color: 'var(--text-primary)' }}>
@@ -291,20 +293,19 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text-secondary)' }}>
-              <p className="font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>⚠️ Último passo (a API da Cakto não faz isso — são 2 cliques por produto):</p>
-              <p>1. Entre em <strong>app.cakto.com.br → Produtos</strong></p>
-              <p>2. Abra cada um dos 3 produtos → aba <strong>Afiliados</strong> → <strong>Ativar programa de afiliados</strong> → comissão <strong>50%</strong> → Salvar</p>
-              <p className="mt-1.5">Pronto: cada afiliado aprovado ganha um link próprio e a Cakto divide a comissão automaticamente.</p>
+              <p className="font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>Como cada afiliado é aprovado (exige revisão sua, por segurança):</p>
+              <p>Quando alguém pedir para se afiliar, você aprova em <strong>app.cakto.com.br → Produtos → aba Afiliados → Solicitações</strong> — aprove a mesma pessoa nos 3 produtos, assim a comissão conta não importa qual plano ela venda.</p>
             </div>
           </div>
         )}
 
         <div className="h-px my-5" style={{ background: 'var(--border-default)' }} />
 
-        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Links de checkout (gateway de pagamento do site)</p>
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Links de checkout (endereço do botão "Assinar" do site)</p>
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-          A API da Cakto não entrega o link de compra pronto — copie você mesmo em <strong>app.cakto.com.br → Produtos → abra o produto → aba Links → "Link de checkout"</strong>
-          e cole abaixo. Assim que salvar, os botões "Assinar" do site redirecionam direto para o checkout da Cakto (no lugar do AbacatePay).
+          Isso não tem nada a ver com marcar vendas — é só dizer para onde o botão "Assinar" do site deve mandar o
+          comprador. É a única coisa que a API da Cakto não entrega pronta: copie em <strong>app.cakto.com.br → Produtos → abra o produto → aba Links → "Link de checkout"</strong>{' '}
+          e cole abaixo, uma vez só. As vendas continuam sendo registradas 100% sozinhas pelo webhook, seja o comprador vindo direto ou por um afiliado.
         </p>
         <div className="space-y-3 mb-4">
           <div>
