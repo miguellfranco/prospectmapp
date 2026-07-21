@@ -26,10 +26,31 @@ export default function InfoBookLanding() {
       .catch(() => {})
   }, [])
 
+  // Rastreamento de afiliado: a Cakto identifica o afiliado por parâmetros na
+  // URL (ex.: ?affiliate=CODIGO&src=instagram). Como o afiliado agora divulga
+  // ESTA página (com os 3 planos) em vez de ir direto pro checkout de um só
+  // produto, guardamos aqui os parâmetros que chegaram na visita e os
+  // repassamos para qualquer checkout que a pessoa escolher — assim a
+  // comissão do afiliado não se perde, seja qual for o plano comprado.
+  useEffect(() => {
+    const qs = window.location.search
+    if (qs && qs.length > 1) {
+      sessionStorage.setItem('ib_aff_tracking', qs)
+    }
+  }, [])
+
   function handleSubscribe(plan: string) {
-    const url = caktoUrls[plan]
-    if (url) { window.location.href = url; return }
-    setCheckoutPlan(plan)
+    const base = caktoUrls[plan]
+    if (!base) { setCheckoutPlan(plan); return }
+
+    const tracking = sessionStorage.getItem('ib_aff_tracking') || window.location.search
+    if (tracking && tracking.length > 1) {
+      const trackingParams = tracking.startsWith('?') ? tracking.slice(1) : tracking
+      const separator = base.includes('?') ? '&' : '?'
+      window.location.href = `${base}${separator}${trackingParams}`
+      return
+    }
+    window.location.href = base
   }
 
   const steps = [
