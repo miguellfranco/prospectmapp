@@ -170,7 +170,7 @@ export async function configureCaktoProduct(productId: string, siteUrl: string, 
     paymentMethods: current.paymentMethods,
     salesPage: current.salesPage,
     affiliate: true,
-    affiliateCommission: commissionPercent,
+    affiliateCommission: commissionPercent.toFixed(2), // API espera decimal como string, não número
     affiliateRequest: true,
     cookieTime: 30,
     affiliateSalesPage: siteUrl,
