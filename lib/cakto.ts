@@ -142,12 +142,17 @@ export async function createCaktoProduct(input: { name: string; description: str
 // Liga o programa de afiliados no produto com comissão de 50%. affiliateRequest
 // true = cada afiliado precisa ser aprovado manualmente no painel da Cakto
 // (recomendado, evita gente aleatória se afiliando); cookieTime 30 dias.
-export async function enableCaktoAffiliates(productId: string, commissionPercent = 50): Promise<any> {
+// affiliateSalesPage aponta o link que a Cakto entrega a cada afiliado para a
+// NOSSA home (com os 3 planos) em vez do checkout de 1 produto só — é o campo
+// que resolve o pedido do usuário de "link do afiliado leva pra página de
+// vendas, e qualquer um dos 3 planos comprado já conta a comissão".
+export async function enableCaktoAffiliates(productId: string, salesPageUrl: string, commissionPercent = 50): Promise<any> {
   return caktoPatch(`/public_api/products/${encodeURIComponent(productId)}/`, {
     affiliate: true,
     affiliateCommission: commissionPercent,
     affiliateRequest: true,
     cookieTime: 30,
+    affiliateSalesPage: salesPageUrl,
   })
 }
 
@@ -165,10 +170,11 @@ export interface CaktoSetupResult {
 }
 
 // Configuração 1-clique do canal de afiliados: garante os 3 produtos dos
-// planos com afiliados ativos a 50% de comissão, e o webhook de vendas
-// apontando para o app. Idempotente — rodar de novo não duplica nada e só
-// reforça a comissão de 50% (caso alguém tenha mudado no painel da Cakto).
-export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupResult> {
+// planos com afiliados ativos a 50% de comissão (link do afiliado apontando
+// para a home com os 3 planos, não pro checkout de 1 produto só), e o webhook
+// de vendas apontando para o app. Idempotente — rodar de novo não duplica
+// nada e só reforça a configuração (caso alguém tenha mudado no painel da Cakto).
+export async function ensureCaktoSetup(webhookUrl: string, salesPageUrl: string): Promise<CaktoSetupResult> {
   const PLAN_PRODUCTS = [
     { plan: 'mensal', name: 'InfoBook — Plano Mensal', price: 97, description: 'Acesso de 30 dias ao InfoBook: crie e-books, páginas de venda e mensagens de divulgação com IA, tudo em um funil completo de 4 passos.' },
     { plan: 'trimestral', name: 'InfoBook — Plano Trimestral', price: 197, description: 'Acesso de 90 dias ao InfoBook: crie e-books, páginas de venda e mensagens de divulgação com IA, tudo em um funil completo de 4 passos. Economize 32% em relação ao mensal.' },
@@ -198,7 +204,7 @@ export async function ensureCaktoSetup(webhookUrl: string): Promise<CaktoSetupRe
 
     let affiliateEnabled = false
     try {
-      await enableCaktoAffiliates(id, 50)
+      await enableCaktoAffiliates(id, salesPageUrl, 50)
       affiliateEnabled = true
     } catch (e) {
       console.error(`Cakto: falha ao ativar afiliados no produto ${name} (${id}):`, e)

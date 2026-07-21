@@ -329,9 +329,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Configura o canal de afiliados na Cakto em 1 clique: cria os 3 produtos
-    // dos planos (se faltarem), cadastra o webhook de vendas e guarda o secret
-    // criptografado. Idempotente. A comissão de 50% dos afiliados não existe
-    // na API pública da Cakto — o front mostra o passo a passo manual.
+    // dos planos (se faltarem), ativa afiliados a 50% com o link apontando
+    // para a home (não pro checkout de 1 produto só), cadastra o webhook de
+    // vendas e guarda o secret criptografado. Idempotente.
     if (action === 'cakto-setup') {
       if (!caktoConfigured()) {
         return NextResponse.json(
@@ -339,8 +339,9 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         )
       }
-      const webhookUrl = `${process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'}/api/webhooks/cakto`
-      const result = await ensureCaktoSetup(webhookUrl)
+      const siteUrl = process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'
+      const webhookUrl = `${siteUrl}/api/webhooks/cakto`
+      const result = await ensureCaktoSetup(webhookUrl, siteUrl)
       if (result.webhook.secret) {
         await prisma.appConfig.upsert({
           where: { key: 'cakto_webhook_secret' },

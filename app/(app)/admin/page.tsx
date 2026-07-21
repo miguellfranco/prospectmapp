@@ -266,8 +266,9 @@ export default function AdminPage() {
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
           Um clique faz tudo que a API da Cakto permite: cria os 3 produtos dos planos (Mensal R$97, Trimestral R$197,
           Vitalício R$297), <strong style={{ color: 'var(--text-primary)' }}>ativa o programa de afiliados com 50% de comissão</strong> em
-          cada um, e cadastra o webhook que ativa a conta do comprador automaticamente — sem você precisar entrar na Cakto.
-          Pode clicar de novo sem medo: não duplica nada, só reforça a configuração.
+          cada um <strong style={{ color: 'var(--text-primary)' }}>já apontando o link do afiliado para a home do InfoBook</strong> (com
+          os 3 planos, em vez do checkout de 1 produto só), e cadastra o webhook que ativa a conta do comprador
+          automaticamente — sem você precisar entrar na Cakto. Pode clicar de novo sem medo: não duplica nada, só reforça a configuração.
         </p>
 
         <button
