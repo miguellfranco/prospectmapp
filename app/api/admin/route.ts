@@ -339,7 +339,7 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         )
       }
-      const webhookUrl = `${process.env.NEXTAUTH_URL || 'https://extracted-olive.vercel.app'}/api/webhooks/cakto`
+      const webhookUrl = `${process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'}/api/webhooks/cakto`
       const result = await ensureCaktoSetup(webhookUrl)
       if (result.webhook.secret) {
         await prisma.appConfig.upsert({

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não foi possível preparar o produto no gateway. Tente novamente em instantes.' }, { status: 502 })
     }
 
-    const siteUrl = process.env.NEXTAUTH_URL || 'https://extracted-olive.vercel.app'
+    const siteUrl = process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'
 
     // Create the local record first (with a placeholder abacatePayId) so its
     // id can be embedded in completionUrl for the confirmation page to poll.

@@ -13,7 +13,7 @@ interface SendAccessEmailParams {
 export async function sendAccessEmail({ to, planLabel, isNewAccount, password }: SendAccessEmailParams) {
   const apiKey = process.env.RESEND_API_KEY
   const from = process.env.RESEND_FROM_EMAIL
-  const loginUrl = `${process.env.NEXTAUTH_URL || 'https://extracted-olive.vercel.app'}/login`
+  const loginUrl = `${process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'}/login`
 
   if (!apiKey || !from) {
     console.error(`RESEND_API_KEY/RESEND_FROM_EMAIL not configured — could not email access to ${to}. Plan: ${planLabel}, newAccount: ${isNewAccount}`)
