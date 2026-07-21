@@ -110,23 +110,27 @@ async function caktoPost(path: string, payload: any): Promise<any> {
   return res.json()
 }
 
-async function caktoPatch(path: string, payload: any): Promise<any> {
+async function caktoPut(path: string, payload: any): Promise<any> {
   const token = await getCaktoToken()
   const res = await fetch(`${CAKTO_API}${path}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
     cache: 'no-store',
   })
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new Error(`Cakto PATCH ${path} ${res.status}: ${body.slice(0, 300)}`)
+    throw new Error(`Cakto PUT ${path} ${res.status}: ${body.slice(0, 300)}`)
   }
   return res.json()
 }
 
 export async function listCaktoProducts(): Promise<any[]> {
   return unwrapList(await caktoGet('/public_api/products/'))
+}
+
+export async function getCaktoProduct(productId: string): Promise<any> {
+  return caktoGet(`/public_api/products/${encodeURIComponent(productId)}/`)
 }
 
 export async function createCaktoProduct(input: { name: string; description: string; price: number }): Promise<any> {
@@ -149,8 +153,22 @@ export async function createCaktoProduct(input: { name: string; description: str
 //   a conta e manda a senha é o NOSSO webhook (grant-access.ts), então aqui
 //   só apontamos o link para a tela de login, caso o comprador use o e-mail
 //   da própria Cakto para entrar.
+//
+// A Cakto usa PUT (não PATCH) nesse endpoint e exige o objeto inteiro — por
+// isso primeiro buscamos o produto atual e só então reenviamos tudo com as
+// mudanças por cima, senão campos como nome/preço seriam apagados.
 export async function configureCaktoProduct(productId: string, siteUrl: string, commissionPercent = 50): Promise<any> {
-  return caktoPatch(`/public_api/products/${encodeURIComponent(productId)}/`, {
+  const current = await getCaktoProduct(productId)
+  return caktoPut(`/public_api/products/${encodeURIComponent(productId)}/`, {
+    name: current.name,
+    description: current.description,
+    price: current.price,
+    type: current.type,
+    category: current.category?.id ?? current.category ?? null,
+    status: current.status,
+    image: current.image,
+    paymentMethods: current.paymentMethods,
+    salesPage: current.salesPage,
     affiliate: true,
     affiliateCommission: commissionPercent,
     affiliateRequest: true,
