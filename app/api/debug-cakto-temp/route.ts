@@ -37,7 +37,19 @@ export async function GET() {
       }),
     )
 
-    return NextResponse.json({ ok: true, count: products.length, products: full })
+    // Dump cru do primeiro produto InfoBook, sem nenhum filtro, pra ver
+    // exatamente quais chaves a Cakto está devolvendo de verdade.
+    const infobookProduct = products.find((p: any) => String(p?.name ?? '').includes('InfoBook'))
+    let raw: any = null
+    if (infobookProduct) {
+      const res = await fetch(`https://api.cakto.com.br/public_api/products/${infobookProduct.id}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      })
+      raw = { status: res.status, body: await res.text() }
+    }
+
+    return NextResponse.json({ ok: true, count: products.length, products: full, raw })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: String(e?.message ?? e) }, { status: 500 })
   }
