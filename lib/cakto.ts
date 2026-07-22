@@ -143,21 +143,17 @@ export async function createCaktoProduct(input: { name: string; description: str
   })
 }
 
-// Configura tudo que o produto precisa pra funcionar sozinho:
-// - Afiliados a 50% (affiliateRequest true = cada afiliado precisa ser
-//   aprovado manualmente no painel, evitando gente aleatória se afiliando),
-//   com o link do afiliado apontando para a NOSSA home (3 planos) em vez do
-//   checkout de 1 produto só (affiliateSalesPage).
-// - Entrega ("Como o comprador recebe acesso"): emailAccess = a Cakto manda
-//   um e-mail com o link de acesso. Isso é só um reforço — quem realmente cria
-//   a conta e manda a senha é o NOSSO webhook (grant-access.ts), então aqui
-//   só apontamos o link para a tela de login, caso o comprador use o e-mail
-//   da própria Cakto para entrar.
-//
-// A Cakto usa PUT (não PATCH) nesse endpoint e exige o objeto inteiro — por
-// isso primeiro buscamos o produto atual e só então reenviamos tudo com as
-// mudanças por cima, senão campos como nome/preço seriam apagados.
-export async function configureCaktoProduct(productId: string, siteUrl: string, commissionPercent = 50): Promise<any> {
+// IMPORTANTE (testado e confirmado 2x em produção, não é suposição): apesar
+// da documentação da Cakto listar campos affiliate/affiliateCommission/
+// affiliateSalesPage/producerName/contentDeliveries como editáveis via PUT,
+// na prática essa conta NÃO grava nem devolve os campos de afiliado (nem
+// aparecem na resposta), e contentDeliveries também não persistiu como
+// ['emailAccess']. Isso precisa ser feito manualmente no painel da Cakto —
+// ver instruções no Super Admin. O único campo confirmado que grava de
+// verdade via API é emailAccessLink (link de acesso), então deixamos isso
+// pré-preenchido como um mimo — o usuário ainda precisa marcar "Acesso por
+// e-mail" manualmente para esse link ser usado.
+export async function configureCaktoProduct(productId: string, siteUrl: string): Promise<any> {
   const current = await getCaktoProduct(productId)
   return caktoPut(`/public_api/products/${encodeURIComponent(productId)}/`, {
     name: current.name,
@@ -169,13 +165,6 @@ export async function configureCaktoProduct(productId: string, siteUrl: string, 
     image: current.image,
     paymentMethods: current.paymentMethods,
     salesPage: current.salesPage,
-    affiliate: true,
-    affiliateCommission: commissionPercent.toFixed(2), // API espera decimal como string, não número
-    affiliateRequest: true,
-    cookieTime: 30,
-    affiliateSalesPage: siteUrl,
-    producerName: 'Miguel Franco',
-    contentDeliveries: ['emailAccess'],
     emailAccessLink: `${siteUrl}/login`,
   })
 }
@@ -189,15 +178,17 @@ export async function createCaktoWebhook(input: { name: string; url: string; pro
 }
 
 export interface CaktoSetupResult {
-  products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean; affiliateError: string | null }[]
+  products: { plan: string; name: string; id: string; created: boolean; deliveryLinkSet: boolean; deliveryLinkError: string | null }[]
   webhook: { id: string; url: string; created: boolean; secret: string | null }
 }
 
-// Configuração 1-clique do canal de afiliados: garante os 3 produtos dos
-// planos com afiliados ativos a 50% de comissão (link do afiliado apontando
-// para a home com os 3 planos, não pro checkout de 1 produto só), e o webhook
-// de vendas apontando para o app. Idempotente — rodar de novo não duplica
-// nada e só reforça a configuração (caso alguém tenha mudado no painel da Cakto).
+// Configuração 1-clique: garante os 3 produtos dos planos e o webhook de
+// vendas apontando para o app. Também pré-preenche o link de acesso por
+// e-mail em cada produto (único campo confirmado gravável via API — ver
+// nota em configureCaktoProduct). Afiliados 50%, tipo de entrega e nome do
+// produtor precisam ser feitos manualmente no painel da Cakto — a API dessa
+// conta não expõe/grava esses campos (testado e confirmado, não é suposição).
+// Idempotente — rodar de novo não duplica nada.
 export async function ensureCaktoSetup(webhookUrl: string, salesPageUrl: string): Promise<CaktoSetupResult> {
   const PLAN_PRODUCTS = [
     { plan: 'mensal', name: 'InfoBook — Plano Mensal', price: 97, description: 'Acesso de 30 dias ao InfoBook: crie e-books, páginas de venda e mensagens de divulgação com IA, tudo em um funil completo de 4 passos.' },
@@ -226,17 +217,17 @@ export async function ensureCaktoSetup(webhookUrl: string, salesPageUrl: string)
       created = true
     }
 
-    let affiliateEnabled = false
-    let affiliateError: string | null = null
+    let deliveryLinkSet = false
+    let deliveryLinkError: string | null = null
     try {
-      await configureCaktoProduct(id, salesPageUrl, 50)
-      affiliateEnabled = true
+      await configureCaktoProduct(id, salesPageUrl)
+      deliveryLinkSet = true
     } catch (e: any) {
-      affiliateError = String(e?.message ?? e)
-      console.error(`Cakto: falha ao ativar afiliados no produto ${name} (${id}):`, e)
+      deliveryLinkError = String(e?.message ?? e)
+      console.error(`Cakto: falha ao configurar entrega no produto ${name} (${id}):`, e)
     }
 
-    products.push({ plan: p.plan, name, id, created, affiliateEnabled, affiliateError })
+    products.push({ plan: p.plan, name, id, created, deliveryLinkSet, deliveryLinkError })
   }
 
   const webhooks = await listCaktoWebhooks()

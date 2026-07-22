@@ -54,9 +54,9 @@ export default function AdminPage() {
   // Gestão de administradores
   const [adminEmail, setAdminEmail] = useState('')
 
-  // Resultado do setup 1-clique da Cakto (produtos + webhook + afiliados)
+  // Resultado do setup 1-clique da Cakto (produtos + webhook)
   const [caktoResult, setCaktoResult] = useState<{
-    products: { plan: string; name: string; id: string; created: boolean; affiliateEnabled: boolean; affiliateError: string | null }[]
+    products: { plan: string; name: string; id: string; created: boolean; deliveryLinkSet: boolean; deliveryLinkError: string | null }[]
     webhook: { id: string; url: string; created: boolean; secretStored: boolean }
   } | null>(null)
 
@@ -264,12 +264,10 @@ export default function AdminPage() {
           <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Cakto — canal de afiliados (vender os planos do InfoBook)</p>
         </div>
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-          Um clique faz tudo que a API da Cakto permite: cria os 3 produtos dos planos (Mensal R$97, Trimestral R$197,
-          Vitalício R$297), <strong style={{ color: 'var(--text-primary)' }}>ativa o programa de afiliados com 50% de comissão</strong> já
-          apontando o link do afiliado para a home do InfoBook (com os 3 planos, em vez do checkout de 1 produto só),
-          <strong style={{ color: 'var(--text-primary)' }}> configura a "Entrega" de cada produto</strong> para o link de acesso/login do
-          InfoBook, e cadastra o webhook que ativa a conta do comprador automaticamente — tudo sem você precisar entrar na Cakto.
-          Pode clicar de novo sem medo: não duplica nada, só reforça a configuração.
+          Um clique cria os 3 produtos dos planos (Mensal R$97, Trimestral R$197, Vitalício R$297) e cadastra o webhook
+          que ativa a conta do comprador automaticamente. <strong style={{ color: 'var(--text-primary)' }}>Afiliados, comissão e tipo de
+          entrega não são configuráveis pela API da Cakto nessa conta</strong> (testamos e confirmamos) — o passo a passo manual
+          está logo abaixo. Pode clicar de novo sem medo: não duplica nada.
         </p>
 
         <button
@@ -278,30 +276,27 @@ export default function AdminPage() {
           className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
         >
           {busy === 'cakto-setup' ? <Loader2 size={15} className="animate-spin" /> : <Plug size={15} />}
-          Configurar Cakto agora (produtos + afiliados 50% + webhook)
+          Configurar Cakto agora (produtos + webhook)
         </button>
 
         {caktoResult && (
           <div className="mt-4 space-y-3">
             <div className="p-3 rounded-xl text-xs space-y-1.5" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
               {caktoResult.products.map((p) => (
-                <div key={p.plan}>
-                  <p style={{ color: 'var(--text-primary)' }}>
-                    {p.affiliateEnabled ? '✅' : '❌'} {p.name} — {p.created ? 'criado agora' : 'já existia'}, afiliados {p.affiliateEnabled ? 'ativos a 50% + entrega de acesso configurada' : 'FALHOU'}
-                  </p>
-                  {p.affiliateError && (
-                    <p className="mt-0.5" style={{ color: '#f87171' }}>Erro da Cakto: {p.affiliateError}</p>
-                  )}
-                </div>
+                <p key={p.plan} style={{ color: 'var(--text-primary)' }}>
+                  ✅ {p.name} — {p.created ? 'criado agora' : 'já existia'}
+                </p>
               ))}
               <p style={{ color: 'var(--text-primary)' }}>
                 ✅ Webhook de ativação — {caktoResult.webhook.created ? 'cadastrado agora' : 'já existia'}
                 {caktoResult.webhook.secretStored ? ' (secret guardado com segurança)' : ''}
               </p>
             </div>
-            <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text-secondary)' }}>
-              <p className="font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>Como cada afiliado é aprovado (exige revisão sua, por segurança):</p>
-              <p>Quando alguém pedir para se afiliar, você aprova em <strong>app.cakto.com.br → Produtos → aba Afiliados → Solicitações</strong> — aprove a mesma pessoa nos 3 produtos, assim a comissão conta não importa qual plano ela venda.</p>
+            <div className="p-3 rounded-xl text-xs space-y-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text-secondary)' }}>
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Passo a passo manual (uma vez, em cada um dos 3 produtos, app.cakto.com.br → Produtos):</p>
+              <p>1. Abra o produto → aba <strong>Entrega</strong> → escolha <strong>"Acesso por e-mail"</strong> → cole o link: <code>https://infobookapp.vercel.app/login</code></p>
+              <p>2. Aba <strong>Afiliados</strong> → <strong>Ativar programa</strong> → comissão <strong>50%</strong> → em "Página de vendas para afiliados" cole: <code>https://infobookapp.vercel.app</code></p>
+              <p>3. Quando alguém pedir pra se afiliar: aprove em <strong>Afiliados → Solicitações</strong> — aprove a mesma pessoa nos 3 produtos, assim a comissão conta não importa qual plano ela venda.</p>
             </div>
           </div>
         )}
