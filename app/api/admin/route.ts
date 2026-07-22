@@ -314,6 +314,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, revoked: email, status: await getStatus(admin.id) })
     }
 
+    // Remove as contas de teste criadas durante o desenvolvimento (não
+    // são dados "seed_"/"DEMO" porque são contas reais de verdade, só que
+    // usadas por mim para validar o fluxo ponta a ponta). Cascata do schema
+    // já apaga estruturas/e-books/páginas/integrações dessas contas junto.
+    if (action === 'cleanup-dev-test-accounts') {
+      const emails = ['teste.claude.infobook@gmail.com', 'teste.claude.free@gmail.com']
+      const result = await prisma.user.deleteMany({ where: { email: { in: emails } } })
+      return NextResponse.json({ ok: true, removedAccounts: result.count, status: await getStatus(admin.id) })
+    }
+
     if (action === 'clear') {
       const [sales, structures] = await prisma.$transaction([
         prisma.infoproductSale.deleteMany({

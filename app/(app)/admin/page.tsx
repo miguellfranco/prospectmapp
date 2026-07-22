@@ -107,6 +107,7 @@ export default function AdminPage() {
       if (action === 'revoke-admin') toast.success(`Acesso de admin removido de ${d.revoked}.`)
       if (action === 'cakto-setup') { toast.success('Cakto configurada! Produtos e webhook prontos. 🥑'); setCaktoResult(d.cakto) }
       if (action === 'set-cakto-checkout-urls') toast.success('Links de checkout salvos! O site já vai usá-los.')
+      if (action === 'cleanup-dev-test-accounts') toast.success(d.removedAccounts ? `${d.removedAccounts} conta(s) de teste removida(s).` : 'Nenhuma conta de teste encontrada (já foi limpo antes).')
       setStatus(d.status)
       syncRevenueInputs(d.status)
     } catch (e: any) {
@@ -438,6 +439,27 @@ export default function AdminPage() {
         <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>
           As vendas são fatiadas em tickets realistas (R$9,90–R$59,90) que somam exatamente cada valor. Vendas reais (webhook) somam por cima desses números.
         </p>
+      </div>
+
+      {/* Limpeza das contas de teste do desenvolvimento */}
+      <div className="lz-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4"
+        style={{ border: '1px solid rgba(239,68,68,0.3)' }}>
+        <div>
+          <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Limpar contas de teste do desenvolvimento</p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            Remove as 2 contas reais criadas para validar o app ponta a ponta (<code>teste.claude.infobook@gmail.com</code> e{' '}
+            <code>teste.claude.free@gmail.com</code>) e tudo que pertence a elas. Sua conta e contas de clientes reais não são tocadas.
+          </p>
+        </div>
+        <button
+          onClick={() => { if (window.confirm('Apagar as 2 contas de teste do desenvolvimento e todos os dados delas?')) run('cleanup-dev-test-accounts') }}
+          disabled={busy !== null}
+          className="!px-4 !py-2.5 text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shrink-0 transition-colors"
+          style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171' }}
+        >
+          {busy === 'cleanup-dev-test-accounts' ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+          Apagar contas de teste
+        </button>
       </div>
 
       {/* Limpeza */}
