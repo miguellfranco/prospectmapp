@@ -7,6 +7,7 @@ import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { caktoConfigured, ensureCaktoSetup, CAKTO_CHECKOUT_URL_KEYS } from '@/lib/cakto'
 import { encryptJson, decryptJson } from '@/lib/crypto'
+import { sendTestEmail } from '@/lib/email'
 
 // Painel Super Admin (dev/QA) — exclusivo do MASTER_EMAIL.
 //
@@ -318,6 +319,15 @@ export async function POST(req: NextRequest) {
     // são dados "seed_"/"DEMO" porque são contas reais de verdade, só que
     // usadas por mim para validar o fluxo ponta a ponta). Cascata do schema
     // já apaga estruturas/e-books/páginas/integrações dessas contas junto.
+    // Testa de verdade se o Resend está entregando e-mails — manda pro
+    // próprio e-mail do admin logado, sem engolir erro (diferente do envio
+    // real de acesso, que degrada silenciosamente pra não travar o pagamento).
+    if (action === 'test-email') {
+      if (!admin.email) return NextResponse.json({ error: 'Sua conta não tem e-mail cadastrado.' }, { status: 400 })
+      await sendTestEmail(admin.email)
+      return NextResponse.json({ ok: true, sentTo: admin.email })
+    }
+
     if (action === 'cleanup-dev-test-accounts') {
       const emails = ['teste.claude.infobook@gmail.com', 'teste.claude.free@gmail.com']
       const result = await prisma.user.deleteMany({ where: { email: { in: emails } } })

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  ShieldAlert, Loader2, Sparkles, Layers, Trash2, RefreshCw, Database, Users, ShoppingCart, Plug, FlaskConical,
+  ShieldAlert, Loader2, Sparkles, Layers, Trash2, RefreshCw, Database, Users, ShoppingCart, Plug, FlaskConical, Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader, brl } from '@/components/lz/ui'
@@ -108,6 +108,7 @@ export default function AdminPage() {
       if (action === 'cakto-setup') { toast.success('Cakto configurada! Produtos e webhook prontos. 🥑'); setCaktoResult(d.cakto) }
       if (action === 'set-cakto-checkout-urls') toast.success('Links de checkout salvos! O site já vai usá-los.')
       if (action === 'cleanup-dev-test-accounts') toast.success(d.removedAccounts ? `${d.removedAccounts} conta(s) de teste removida(s).` : 'Nenhuma conta de teste encontrada (já foi limpo antes).')
+      if (action === 'test-email') toast.success(`E-mail de teste enviado para ${d.sentTo}! Confira sua caixa de entrada (e o spam).`)
       setStatus(d.status)
       syncRevenueInputs(d.status)
     } catch (e: any) {
@@ -331,6 +332,26 @@ export default function AdminPage() {
         >
           {busy === 'set-cakto-checkout-urls' ? <Loader2 size={15} className="animate-spin" /> : <ShoppingCart size={15} />}
           Salvar links de checkout
+        </button>
+      </div>
+
+      {/* Teste real de envio de e-mail (Resend) */}
+      <div className="lz-card p-6 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Mail size={16} style={{ color: 'var(--purple-soft)' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Testar envio de e-mail (Resend)</p>
+        </div>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          Manda um e-mail de teste de verdade para o e-mail da conta que está logada agora.
+          É a única forma de confirmar que o Resend está entregando — se falhar, o erro real aparece na notificação.
+        </p>
+        <button
+          onClick={() => run('test-email')}
+          disabled={busy !== null}
+          className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+        >
+          {busy === 'test-email' ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+          Enviar e-mail de teste
         </button>
       </div>
 
