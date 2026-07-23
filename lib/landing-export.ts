@@ -12,6 +12,7 @@ export interface ExportLandingInput {
   secondaryColor: string
   niche?: string // usado só para escolher o ícone decorativo do nicho
   coverImageDataUri?: string | null // capa do e-book gerada por IA — usada como mockup do produto
+  price?: number | null // preço numérico — usado só para calcular o valor da parcela em até 12x
   copy: {
     headline: string
     subheadline?: string
@@ -36,7 +37,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 export function buildLandingHtml(input: ExportLandingInput): string {
-  const { productName, priceDisplay, checkoutUrl, primaryColor: primary, secondaryColor: bg, copy, niche, coverImageDataUri } = input
+  const { productName, priceDisplay, checkoutUrl, primaryColor: primary, secondaryColor: bg, copy, niche, coverImageDataUri, price } = input
   const isLight = bg.toLowerCase() === '#ffffff'
   const text = isLight ? '#18181b' : '#f4f4f7'
   const soft = isLight ? '#52525b' : '#a1a1aa'
@@ -56,6 +57,11 @@ export function buildLandingHtml(input: ExportLandingInput): string {
   const why = (copy.why_paragraphs ?? []).map((p) => `<p class="why-p">${esc(p)}</p>`).join('\n')
 
   const audience = (copy.audience ?? []).map((a) => `<div class="aud">${esc(a)}</div>`).join('\n')
+
+  // "Em até 12x" é só uma indicação pro visitante — o parcelamento real (e o
+  // número de parcelas disponível pra esse valor) é decidido no checkout do
+  // gateway de pagamento, não aqui.
+  const installmentDisplay = price && price > 0 ? `R$ ${(price / 12).toFixed(2).replace('.', ',')}` : null
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -86,6 +92,7 @@ export function buildLandingHtml(input: ExportLandingInput): string {
   .cta-off { background: ${cardBg}; border: 1px solid ${cardBorder}; color: ${soft}; box-shadow: none; font-size: 14px; font-weight: 400; }
   .price-note { margin-top: 18px; font-size: 14px; color: ${soft}; }
   .price-note strong { color: ${primary}; font-size: 18px; }
+  .installment { display: block; margin-top: 4px; font-size: 13px; color: ${soft}; opacity: .85; }
   h2 { text-align: center; font-size: 28px; font-weight: 800; margin-bottom: 36px; }
   .sect { border-top: 1px solid ${cardBorder}; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; max-width: 860px; margin: 0 auto; }
@@ -116,7 +123,7 @@ export function buildLandingHtml(input: ExportLandingInput): string {
     <h1>${esc(copy.headline)}</h1>
     ${copy.subheadline ? `<p class="sub">${esc(copy.subheadline)}</p>` : ''}
     ${cta}
-    ${priceDisplay ? `<p class="price-note">por apenas <strong>${esc(priceDisplay)}</strong></p>` : ''}
+    ${priceDisplay ? `<p class="price-note">por apenas <strong>${esc(priceDisplay)}</strong>${installmentDisplay ? ` <span class="installment">ou em até 12x de ${esc(installmentDisplay)}</span>` : ''}</p>` : ''}
   </div>
 </section>
 
@@ -129,7 +136,7 @@ ${audience ? `<section class="sect"><h2>Esse material é para você que...</h2>$
 <section class="sect offer">
   <div class="offer-card">
     <h2>${esc(productName)}</h2>
-    ${priceDisplay ? `<div><span class="big-price">${esc(priceDisplay)}</span><span class="price-sub">pagamento único</span></div>` : ''}
+    ${priceDisplay ? `<div><span class="big-price">${esc(priceDisplay)}</span><span class="price-sub">pagamento único${installmentDisplay ? ` · ou em até 12x de ${esc(installmentDisplay)}` : ''}</span></div>` : ''}
     ${cta}
     ${copy.guarantee ? `<p class="guarantee">🔒 ${esc(copy.guarantee)}</p>` : ''}
   </div>

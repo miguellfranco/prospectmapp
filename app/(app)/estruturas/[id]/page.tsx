@@ -214,6 +214,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
       secondaryColor: lp.secondaryColor,
       niche: structure!.niche,
       coverImageDataUri: structure!.product?.coverImageDataUri,
+      price: structure!.product?.price,
       copy,
     })
   }

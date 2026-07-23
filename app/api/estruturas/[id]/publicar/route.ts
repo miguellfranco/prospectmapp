@@ -54,6 +54,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       secondaryColor: lp.secondaryColor,
       niche: structure.niche,
       coverImageDataUri: structure.product?.coverImageDataUri,
+      price: structure.product?.price,
       copy,
     })
 
