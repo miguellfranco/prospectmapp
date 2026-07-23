@@ -130,20 +130,21 @@ export default function ConfiguracoesPage() {
       .catch(() => setPasswordSaving(false))
   }
 
-  // Upgrade Plan
+  // Upgrade Plan — leva pro checkout real da Cakto (Vitalício). Nunca libera
+  // o plano de graça: upgrade só conta depois de um pagamento de verdade,
+  // confirmado pelo webhook da Cakto.
   function handleUpgrade() {
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'upgrade' })
-    })
+    fetch('/api/public/cakto-checkout')
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) {
-          toast.success('Parabéns! Seu upgrade para VITALÍCIO foi ativado! 👑')
-          fetchSettings()
+        const url = d?.urls?.vitalicio
+        if (url) {
+          window.location.href = url
+        } else {
+          toast.error('Checkout do plano Vitalício ainda não configurado. Tente novamente mais tarde.')
         }
       })
+      .catch(() => toast.error('Erro ao abrir o checkout. Tente novamente.'))
   }
 
   // Delete account
@@ -285,12 +286,12 @@ export default function ConfiguracoesPage() {
                 </p>
               </div>
 
-              {data?.plan?.type === 'mensal' ? (
+              {data?.plan?.type === 'mensal' || data?.plan?.type === 'trimestral' ? (
                 <button
                   onClick={handleUpgrade}
                   className="lz-btn-primary w-full text-xs font-bold py-2.5 flex items-center justify-center gap-1 bg-gradient-to-r from-yellow-500 to-amber-600 border-amber-500 text-black hover:from-yellow-400 hover:to-amber-500 shadow-lg shadow-amber-950/50"
                 >
-                  ⚡ Fazer Upgrade para Semestral
+                  ⚡ Fazer Upgrade para Vitalício
                 </button>
               ) : (
                 <div className="p-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-center font-bold text-[10px] uppercase font-jet">

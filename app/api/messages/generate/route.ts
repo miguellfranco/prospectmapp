@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { isRateLimited } from '@/lib/rate-limit'
 import fs from 'fs'
@@ -37,6 +38,7 @@ function updateLocalLeadStatus(leadId: string, status: string, viewed?: boolean)
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
   if (!user) return new Response(JSON.stringify({ error: 'Não autenticado' }), { status: 401 })
+  if (!hasActiveAccess(user)) return new Response(JSON.stringify({ error: NO_ACCESS_MSG }), { status: 403 })
 
   if (isRateLimited(`msg-gen:${user.id}`, 20, 60_000)) {
     return new Response(JSON.stringify({ error: 'Muitas gerações em pouco tempo. Aguarde um instante e tente novamente.' }), { status: 429 })

@@ -54,15 +54,12 @@ export const authOptions: NextAuthOptions = {
               })
             }
           } catch (dbError) {
+            // Nunca fabrica um usuário fictício quando o banco falha — melhor
+            // recusar o login e mostrar erro do que emitir uma sessão que não
+            // corresponde a nenhuma conta real (isso já foi um bug de acesso
+            // indevido). Falha alta e visível, não silenciosa.
             console.error('Database connection error in master login:', dbError)
-            // Fallback user structure so login doesn't crash if DB connection fails
-            user = {
-              id: 'admin_bypass_fallback_id',
-              email: targetEmail,
-              name: 'Administrador ProspectMap',
-              plan: 'vitalicio',
-              planStatus: 'active',
-            }
+            return null
           }
 
           // Nota: este login de administrador antes semeava automaticamente ~110 vendas,

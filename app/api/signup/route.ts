@@ -58,31 +58,22 @@ export async function POST(req: NextRequest) {
     void plan
     const chosenPlan = 'free'
 
-    let user = null
-    try {
-      user = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          name: String(name),
-          passwordHash: hash,
-          plan: chosenPlan,
-          planStatus: chosenPlan === 'free' ? 'trial' : 'active',
-          referralCode: code,
-          referredBy,
-          whatsappNumber: whatsappNumber ? String(whatsappNumber) : null,
-          leadsResetDate: new Date(),
-        },
-      })
-    } catch (dbError) {
-      console.warn('Database offline during signup, generating local user bypass fallback')
-      user = {
-        id: `local_user_${Math.random().toString(36).substring(2, 9)}`,
+    // Nunca fabrica um usuário fictício se o banco falhar ao salvar — isso
+    // devolveria "sucesso" para uma conta que não existe de verdade (a pessoa
+    // nunca conseguiria logar). Melhor falhar alto e visível.
+    const user = await prisma.user.create({
+      data: {
         email: normalizedEmail,
         name: String(name),
+        passwordHash: hash,
         plan: chosenPlan,
-        planStatus: 'active',
-      }
-    }
+        planStatus: chosenPlan === 'free' ? 'trial' : 'active',
+        referralCode: code,
+        referredBy,
+        whatsappNumber: whatsappNumber ? String(whatsappNumber) : null,
+        leadsResetDate: new Date(),
+      },
+    })
 
     // Vínculo de afiliado (sem comissão no cadastro — conta nasce free;
     // comissão só faria sentido após pagamento confirmado)

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { isRateLimited } from '@/lib/rate-limit'
 import fs from 'fs'
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    if (!hasActiveAccess(user)) return NextResponse.json({ error: NO_ACCESS_MSG }, { status: 403 })
 
     if (isRateLimited(`lead-analyze:${user.id}`, 20, 60_000)) {
       return NextResponse.json({ error: 'Muitas análises em pouco tempo. Aguarde um instante e tente novamente.' }, { status: 429 })

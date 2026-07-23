@@ -48,12 +48,12 @@ export async function GET() {
         trackingPixelId: user.trackingPixelId || 'pixel_default'
       },
       plan: {
-        name: user.plan === 'vitalicio' ? 'Plano Semestral 👑' : user.plan === 'anual' ? 'Plano Anual 🏆' : user.plan === 'mensal' ? 'Plano Mensal ⚡' : 'Plano de Testes Gratis 🧪',
+        name: user.plan === 'vitalicio' ? 'Plano Vitalício 👑' : user.plan === 'trimestral' ? 'Plano Trimestral 🚀' : user.plan === 'anual' ? 'Plano Anual 🏆' : user.plan === 'mensal' ? 'Plano Mensal ⚡' : 'Plano Gratuito 🧪',
         type: user.plan,
         leadsUsedToday: user.leadsUsedToday || 0,
         dailyLimit: 100,
         daysActive: Math.max(1, Math.floor((Date.now() - new Date(user.createdAt || new Date()).getTime()) / (1000 * 60 * 60 * 24)) + 1),
-        billingDate: user.plan === 'vitalicio' ? 'Acesso Semestral Ativo' : user.plan === 'anual' ? 'Acesso Anual Ativo' : user.plan === 'mensal' ? 'Acesso Mensal Ativo' : 'Acesso Grátis'
+        billingDate: user.plan === 'vitalicio' ? 'Acesso Vitalício Ativo' : user.plan === 'trimestral' ? 'Acesso Trimestral Ativo' : user.plan === 'anual' ? 'Acesso Anual Ativo' : user.plan === 'mensal' ? 'Acesso Mensal Ativo' : 'Acesso Grátis'
       },
       referral: {
         link: referralLink,
@@ -140,15 +140,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Senha atualizada com sucesso!' })
     }
 
-    if (action === 'upgrade') {
-      try {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { plan: 'vitalicio' }
-        })
-      } catch {}
-      return NextResponse.json({ success: true, message: 'Upgrade para vitalício concluído!' })
-    }
+    // Removido de propósito: existia aqui uma ação "upgrade" que concedia o
+    // plano Vitalício de graça, sem nenhuma verificação de pagamento — um
+    // buraco de receita real (qualquer cliente Mensal logado podia virar
+    // Vitalício com 1 clique). Upgrades reais agora só acontecem comprando de
+    // verdade via Cakto (o botão no front redireciona pro checkout real).
 
     if (action === 'delete') {
       try {

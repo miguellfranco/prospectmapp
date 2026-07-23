@@ -3,6 +3,7 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { decryptJson } from '@/lib/crypto'
 import { createProductOnGateway, type GatewayProvider } from '@/lib/gateways'
@@ -11,6 +12,7 @@ import { createProductOnGateway, type GatewayProvider } from '@/lib/gateways'
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  if (!hasActiveAccess(user)) return NextResponse.json({ error: NO_ACCESS_MSG }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const price = Number(body?.price)

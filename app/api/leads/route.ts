@@ -7,6 +7,7 @@ export const maxDuration = 60
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import fs from 'fs'
 import path from 'path'
@@ -133,6 +134,9 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser()
     if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    // Cada chamada aqui dispara uma busca real na Apify (custa dinheiro) —
+    // sem essa checagem, qualquer conta grátis conseguia gastar Apify de graça.
+    if (!hasActiveAccess(user)) return NextResponse.json({ error: NO_ACCESS_MSG }, { status: 403 })
 
     const body = await req.json().catch(() => ({}))
     const city = String(body?.city ?? '').trim() || 'São Paulo, SP'

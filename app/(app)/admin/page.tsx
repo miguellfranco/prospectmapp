@@ -314,8 +314,8 @@ export default function AdminPage() {
             </div>
             <div className="p-3 rounded-xl text-xs space-y-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text-secondary)' }}>
               <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Passo a passo manual (uma vez, em cada um dos 3 produtos, app.cakto.com.br → Produtos):</p>
-              <p>1. Abra o produto → aba <strong>Entrega</strong> → escolha <strong>"Acesso por e-mail"</strong> → cole o link: <code>https://infobookapp.vercel.app/login</code></p>
-              <p>2. Aba <strong>Afiliados</strong> → <strong>Ativar programa</strong> → comissão <strong>50%</strong> → em "Página de vendas para afiliados" cole: <code>https://infobookapp.vercel.app</code></p>
+              <p>1. Abra o produto → aba <strong>Entrega</strong> → escolha <strong>&ldquo;Acesso por e-mail&rdquo;</strong> → cole o link: <code>https://infobookapp.vercel.app/login</code></p>
+              <p>2. Aba <strong>Afiliados</strong> → <strong>Ativar programa</strong> → comissão <strong>50%</strong> → em &ldquo;Página de vendas para afiliados&rdquo; cole: <code>https://infobookapp.vercel.app</code></p>
               <p>3. Quando alguém pedir pra se afiliar: aprove em <strong>Afiliados → Solicitações</strong> — aprove a mesma pessoa nos 3 produtos, assim a comissão conta não importa qual plano ela venda.</p>
             </div>
           </div>
@@ -348,17 +348,17 @@ export default function AdminPage() {
                 <pre className="whitespace-pre-wrap break-all p-2 rounded-lg" style={{ background: 'var(--bg-base)' }}>{JSON.stringify(webhookTestResult.delivery.response, null, 2)}</pre>
               </>
             ) : (
-              <p style={{ color: 'var(--text-primary)' }}>Evento disparado, mas o histórico ainda não apareceu — clique em "Testar webhook agora" de novo em alguns segundos.</p>
+              <p style={{ color: 'var(--text-primary)' }}>Evento disparado, mas o histórico ainda não apareceu — clique em &ldquo;Testar webhook agora&rdquo; de novo em alguns segundos.</p>
             )}
           </div>
         )}
 
         <div className="h-px my-5" style={{ background: 'var(--border-default)' }} />
 
-        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Links de checkout (endereço do botão "Assinar" do site)</p>
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Links de checkout (endereço do botão &ldquo;Assinar&rdquo; do site)</p>
         <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-          Isso não tem nada a ver com marcar vendas — é só dizer para onde o botão "Assinar" do site deve mandar o
-          comprador. É a única coisa que a API da Cakto não entrega pronta: copie em <strong>app.cakto.com.br → Produtos → abra o produto → aba Links → "Link de checkout"</strong>{' '}
+          Isso não tem nada a ver com marcar vendas — é só dizer para onde o botão &ldquo;Assinar&rdquo; do site deve mandar o
+          comprador. É a única coisa que a API da Cakto não entrega pronta: copie em <strong>app.cakto.com.br → Produtos → abra o produto → aba Links → &ldquo;Link de checkout&rdquo;</strong>{' '}
           e cole abaixo, uma vez só. As vendas continuam sendo registradas 100% sozinhas pelo webhook, seja o comprador vindo direto ou por um afiliado.
         </p>
         <div className="space-y-3 mb-4">
