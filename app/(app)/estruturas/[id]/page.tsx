@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Check, Copy, Download, ExternalLink, Facebook, Globe,
-  Loader2, MessageCircle, PartyPopper, Pencil, Plug, RefreshCw, Search, Sparkles, Tag, Wand2,
+  Loader2, MessageCircle, PartyPopper, Pencil, Plug, RefreshCw, Sparkles, Tag, Wand2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { markdownToHtml } from '@/lib/markdown'
@@ -30,7 +30,7 @@ interface StructureDetail {
     headline: string; copyJson: string; priceDisplay: string | null
     userHostedUrl: string | null; netlifySiteId: string | null
   } | null
-  outreachGroups: { id: string; platform: string; groupName: string; groupUrl: string; country: string; isFallbackLink?: boolean }[]
+  outreachGroups: { id: string; platform: string; groupName: string; groupUrl: string; country: string }[]
   outreachMessages: { id: string; generatedText: string; createdAt: string }[]
 }
 
@@ -854,22 +854,15 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                     className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:brightness-125"
                     style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
                   >
-                    {g.isFallbackLink
-                      ? <Search size={18} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
-                      : g.platform === 'facebook'
-                        ? <Facebook size={18} style={{ color: '#3b82f6' }} className="shrink-0" />
-                        : <MessageCircle size={18} style={{ color: '#10b981' }} className="shrink-0" />}
+                    {g.platform === 'facebook'
+                      ? <Facebook size={18} style={{ color: '#3b82f6' }} className="shrink-0" />
+                      : <MessageCircle size={18} style={{ color: '#10b981' }} className="shrink-0" />}
                     <span className="text-sm flex-1 truncate" style={{ color: 'var(--text-primary)' }}>{g.groupName}</span>
-                    {g.isFallbackLink && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full shrink-0" style={{ background: 'var(--bg-default)', color: 'var(--text-muted)', border: '1px solid var(--border-default)' }}>
-                        busca
-                      </span>
-                    )}
                     <ExternalLink size={14} style={{ color: 'var(--text-muted)' }} className="shrink-0" />
                   </a>
                 ))}
                 <p className="text-[11px] pt-1" style={{ color: 'var(--text-muted)' }}>
-                  Sem o selo &ldquo;busca&rdquo;: página real (grupo, convite ou diretório de convites) já encontrada pela busca. Com o selo: nenhum resultado direto veio para esse termo, então o link abre uma busca no Google para você continuar manualmente. Sempre confira o grupo antes de entrar e respeite as regras de cada comunidade.
+                  Os links de Facebook abrem a busca de grupos direto dentro do Facebook, já filtrada pelo tema. Os de WhatsApp abrem uma busca no Google já otimizada para achar links de convite reais. Navegue pelos resultados, confira o grupo antes de entrar e respeite as regras de cada comunidade.
                 </p>
               </div>
             )}

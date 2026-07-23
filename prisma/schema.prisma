@@ -299,15 +299,14 @@ model LandingPage {
 }
 
 model OutreachGroup {
-  id            String   @id @default(cuid())
-  structureId   String
-  platform      String   // facebook | whatsapp
-  groupName     String
-  groupUrl      String   @db.Text
-  memberCount   Int?
-  country       String   @default("BR")
-  isFallbackLink Boolean @default(false) // true = link genérico de busca (nenhum resultado real encontrado); false = página real retornada pela busca
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  structureId String
+  platform    String   // facebook | whatsapp
+  groupName   String
+  groupUrl    String   @db.Text
+  memberCount Int?
+  country     String   @default("BR")
+  createdAt   DateTime @default(now())
 
   structure Structure @relation(fields: [structureId], references: [id], onDelete: Cascade)
 
