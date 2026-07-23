@@ -60,6 +60,10 @@ export default function AdminPage() {
     webhook: { id: string; url: string; created: boolean; secretStored: boolean }
   } | null>(null)
 
+  const [webhookTestResult, setWebhookTestResult] = useState<{
+    delivery: { eventId?: string; status?: string | number; dispatchedAt?: string; payload?: any; response?: any } | null
+  } | null>(null)
+
   // Links de checkout da Cakto por plano (colados manualmente do painel deles)
   const [caktoUrlMensal, setCaktoUrlMensal] = useState('')
   const [caktoUrlTrimestral, setCaktoUrlTrimestral] = useState('')
@@ -110,6 +114,7 @@ export default function AdminPage() {
       if (action === 'grant-admin') { toast.success(`${d.granted} agora é administrador! 🛡`); setAdminEmail('') }
       if (action === 'revoke-admin') toast.success(`Acesso de admin removido de ${d.revoked}.`)
       if (action === 'cakto-setup') { toast.success('Cakto configurada! Produtos e webhook prontos. 🥑'); setCaktoResult(d.cakto) }
+      if (action === 'test-cakto-webhook') { toast.success('Evento de teste disparado! Veja o payload abaixo.'); setWebhookTestResult(d) }
       if (action === 'set-cakto-checkout-urls') toast.success('Links de checkout salvos! O site já vai usá-los.')
       if (action === 'cleanup-dev-test-accounts') toast.success(d.removedAccounts ? `${d.removedAccounts} conta(s) de teste removida(s).` : 'Nenhuma conta de teste encontrada (já foi limpo antes).')
       if (action === 'test-email') toast.success(`E-mail de teste enviado para ${d.sentTo}! Confira sua caixa de entrada (e o spam).`)
@@ -307,6 +312,38 @@ export default function AdminPage() {
               <p>2. Aba <strong>Afiliados</strong> → <strong>Ativar programa</strong> → comissão <strong>50%</strong> → em "Página de vendas para afiliados" cole: <code>https://infobookapp.vercel.app</code></p>
               <p>3. Quando alguém pedir pra se afiliar: aprove em <strong>Afiliados → Solicitações</strong> — aprove a mesma pessoa nos 3 produtos, assim a comissão conta não importa qual plano ela venda.</p>
             </div>
+          </div>
+        )}
+
+        <div className="h-px my-5" style={{ background: 'var(--border-default)' }} />
+
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Testar o webhook (a parte mais crítica — confirma sem precisar de compra real)</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          Dispara um evento de teste da própria Cakto pro nosso endpoint e mostra o payload real recebido + a resposta que
+          nosso servidor deu. É a prova concreta de que o formato bate com o que o código espera.
+        </p>
+        <button
+          onClick={() => run('test-cakto-webhook')}
+          disabled={busy !== null}
+          className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+        >
+          {busy === 'test-cakto-webhook' ? <Loader2 size={15} className="animate-spin" /> : <Plug size={15} />}
+          Testar webhook agora
+        </button>
+
+        {webhookTestResult && (
+          <div className="mt-4 p-3 rounded-xl text-xs space-y-2 font-jet" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+            {webhookTestResult.delivery ? (
+              <>
+                <p style={{ color: 'var(--text-primary)' }}>Evento: {webhookTestResult.delivery.eventId} · Status da resposta: {webhookTestResult.delivery.status ?? '—'} · {webhookTestResult.delivery.dispatchedAt}</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Payload enviado pela Cakto:</p>
+                <pre className="whitespace-pre-wrap break-all p-2 rounded-lg" style={{ background: 'var(--bg-base)' }}>{JSON.stringify(webhookTestResult.delivery.payload, null, 2)}</pre>
+                <p style={{ color: 'var(--text-secondary)' }}>Resposta do nosso servidor:</p>
+                <pre className="whitespace-pre-wrap break-all p-2 rounded-lg" style={{ background: 'var(--bg-base)' }}>{JSON.stringify(webhookTestResult.delivery.response, null, 2)}</pre>
+              </>
+            ) : (
+              <p style={{ color: 'var(--text-primary)' }}>Evento disparado, mas o histórico ainda não apareceu — clique em "Testar webhook agora" de novo em alguns segundos.</p>
+            )}
           </div>
         )}
 

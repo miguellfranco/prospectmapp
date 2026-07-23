@@ -177,6 +177,17 @@ export async function createCaktoWebhook(input: { name: string; url: string; pro
   return caktoPost('/public_api/webhook/', input)
 }
 
+// Dispara um evento sintético de teste pro webhook já cadastrado — permite
+// verificar de verdade se nosso endpoint recebe e entende o formato da Cakto,
+// sem precisar esperar uma compra real.
+export async function testCaktoWebhookEvent(webhookId: string, eventId: string): Promise<any> {
+  return caktoPost(`/public_api/webhook/event_test/${encodeURIComponent(webhookId)}/?event_id=${encodeURIComponent(eventId)}`, {})
+}
+
+export async function getCaktoWebhookEventHistory(limit = 5): Promise<any[]> {
+  return unwrapList(await caktoGet(`/public_api/webhook/event_history/?limit=${limit}&ordering=-dispatchedAt`))
+}
+
 export interface CaktoSetupResult {
   products: { plan: string; name: string; id: string; created: boolean; deliveryLinkSet: boolean; deliveryLinkError: string | null }[]
   webhook: { id: string; url: string; created: boolean; secret: string | null }

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
-import { caktoConfigured, ensureCaktoSetup, CAKTO_CHECKOUT_URL_KEYS } from '@/lib/cakto'
+import { caktoConfigured, ensureCaktoSetup, CAKTO_CHECKOUT_URL_KEYS, listCaktoWebhooks, testCaktoWebhookEvent, getCaktoWebhookEventHistory } from '@/lib/cakto'
 import { encryptJson, decryptJson } from '@/lib/crypto'
 import { sendTestEmail, sendAccessEmailOrThrow } from '@/lib/email'
 import { generatePassword } from '@/lib/grant-access'
@@ -340,6 +340,42 @@ export async function POST(req: NextRequest) {
       const demoPassword = generatePassword()
       await sendAccessEmailOrThrow({ to: email, planLabel: PLAN_LABELS[plan] ?? plan, isNewAccount: true, password: demoPassword })
       return NextResponse.json({ ok: true, sentTo: email, status: await getStatus(admin.id) })
+    }
+
+    // Dispara um evento de teste (purchase_approved) pro webhook já cadastrado
+    // e devolve o payload real + a resposta que o NOSSO endpoint deu — prova
+    // concreta (não suposição) de que o formato bate com o que nosso código espera.
+    if (action === 'test-cakto-webhook') {
+      if (!caktoConfigured()) {
+        return NextResponse.json({ error: 'CAKTO_CLIENT_ID/CAKTO_CLIENT_SECRET não configurados na Vercel.' }, { status: 400 })
+      }
+      const siteUrl = process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'
+      const webhookUrl = `${siteUrl}/api/webhooks/cakto`
+      const webhooks = await listCaktoWebhooks()
+      const hook = webhooks.find((w: any) => String(w?.url ?? '').trim() === webhookUrl)
+      if (!hook?.id) {
+        return NextResponse.json({ error: 'Nenhum webhook cadastrado ainda apontando pro InfoBook. Clique em "Configurar Cakto agora" primeiro.' }, { status: 400 })
+      }
+
+      await testCaktoWebhookEvent(String(hook.id), 'purchase_approved')
+      await new Promise((r) => setTimeout(r, 2500)) // dá tempo da Cakto registrar a entrega no histórico
+
+      const history = await getCaktoWebhookEventHistory(5)
+      const lastTest = history.find((h: any) => String(h?.event_id ?? h?.eventId ?? '') === 'purchase_approved') ?? history[0] ?? null
+
+      return NextResponse.json({
+        ok: true,
+        sent: true,
+        delivery: lastTest
+          ? {
+              eventId: lastTest?.event_id ?? lastTest?.eventId,
+              status: lastTest?.event_status ?? lastTest?.eventStatus,
+              dispatchedAt: lastTest?.dispatchedAt,
+              payload: lastTest?.payload,
+              response: lastTest?.response,
+            }
+          : null,
+      })
     }
 
     if (action === 'cleanup-dev-test-accounts') {
