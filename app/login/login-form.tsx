@@ -47,6 +47,10 @@ export function LoginForm() {
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Seu infoproduto completo em 4 passos com IA.</p>
         </div>
 
+        <div className="mb-5 p-3 rounded-xl text-xs text-center" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)', color: 'var(--text-secondary)' }}>
+          Acabou de comprar? Enviamos seu e-mail e senha de acesso por e-mail — confira também a caixa de <strong style={{ color: 'var(--text-primary)' }}>spam/lixo eletrônico</strong> se não encontrar em alguns minutos.
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-grotesk mb-1.5" style={{ color: 'var(--text-secondary)' }}>E-MAIL</label>
