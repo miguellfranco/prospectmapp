@@ -3,7 +3,7 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
-import { isAdminUser } from '@/lib/plan'
+import { isAdminUser, isMasterUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { caktoConfigured, ensureCaktoSetup, CAKTO_CHECKOUT_URL_KEYS, listCaktoWebhooks, testCaktoWebhookEvent, getCaktoWebhookEventHistory } from '@/lib/cakto'
 import { encryptJson, decryptJson } from '@/lib/crypto'
@@ -33,6 +33,12 @@ async function requireAdmin() {
   return user
 }
 
+// Erro-padrão para ações restritas ao dono (MASTER_EMAIL) — admins promovidos
+// (ex.: afiliados que viraram admin para gerar dados de demonstração na
+// própria conta) não podem gerenciar outros admins nem mexer na configuração
+// de pagamento/e-mail/webhook do InfoBook inteiro.
+const MASTER_ONLY_MSG = 'Essa ação é exclusiva do dono da conta principal.'
+
 function periodStarts() {
   const now = new Date()
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -46,7 +52,7 @@ function periodStarts() {
   }
 }
 
-async function getStatus(userId: string) {
+async function getStatus(userId: string, isMaster: boolean) {
   const { startOfToday, start7, start30 } = periodStarts()
   const seedWhere = { userId, gatewayTransactionId: { startsWith: 'seed_' } }
   const [seedSales, seedToday, seed7, seed30, demoStructures, totals] = await Promise.all([
@@ -80,6 +86,7 @@ async function getStatus(userId: string) {
     } catch { /* ignora valor corrompido */ }
   }
   return {
+    isMaster,
     admins,
     caktoCheckoutUrls,
     masterEmail: process.env.MASTER_EMAIL?.trim().toLowerCase() ?? null,
@@ -131,12 +138,21 @@ export async function GET() {
   const admin = await requireAdmin()
   if (!admin) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
   try {
-    return NextResponse.json({ ok: true, status: await getStatus(admin.id) })
+    return NextResponse.json({ ok: true, status: await getStatus(admin.id, isMasterUser(admin)) })
   } catch (e) {
     console.error('Erro no status admin:', e)
     return NextResponse.json({ error: 'Erro ao carregar o status.' }, { status: 500 })
   }
 }
+
+// Ações restritas ao dono (MASTER_EMAIL) — gerenciar outros admins e mexer na
+// configuração de pagamento/e-mail/webhook do InfoBook inteiro. Admins
+// promovidos (ex.: afiliados) só têm acesso aos dados de demonstração da
+// própria conta, nunca a essas ferramentas.
+const MASTER_ONLY_ACTIONS = new Set([
+  'grant-admin', 'revoke-admin', 'cakto-setup', 'set-cakto-checkout-urls',
+  'test-email', 'test-purchase-email', 'test-cakto-webhook',
+])
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin()
@@ -144,6 +160,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}))
   const action = String(body?.action ?? '')
+
+  if (MASTER_ONLY_ACTIONS.has(action) && !isMasterUser(admin)) {
+    return NextResponse.json({ error: MASTER_ONLY_MSG }, { status: 403 })
+  }
 
   try {
     if (action === 'seed-sales') {
@@ -178,7 +198,7 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < data.length; i += 5000) {
         await prisma.infoproductSale.createMany({ data: data.slice(i, i + 5000) })
       }
-      return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     // Define o faturamento de demonstração período por período, com valores
@@ -244,7 +264,7 @@ export async function POST(req: NextRequest) {
       for (let j = 0; j < data.length; j += 5000) {
         await prisma.infoproductSale.createMany({ data: data.slice(j, j + 5000) })
       }
-      return NextResponse.json({ ok: true, created: data.length, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, created: data.length, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     // Estruturas demo configuráveis: total, quantas têm e-book e quantas têm
@@ -290,7 +310,7 @@ export async function POST(req: NextRequest) {
           })
         }
       }
-      return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, created: count, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     // Concede acesso de Super Admin a uma conta já registrada (para o sócio)
@@ -305,7 +325,7 @@ export async function POST(req: NextRequest) {
         )
       }
       await prisma.user.update({ where: { id: target.id }, data: { isAdmin: true } })
-      return NextResponse.json({ ok: true, granted: email, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, granted: email, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     if (action === 'revoke-admin') {
@@ -314,7 +334,7 @@ export async function POST(req: NextRequest) {
       if (email === master) return NextResponse.json({ error: 'O dono (MASTER_EMAIL) não pode ser removido.' }, { status: 400 })
       if (email === admin.email?.toLowerCase()) return NextResponse.json({ error: 'Você não pode remover a si mesmo.' }, { status: 400 })
       await prisma.user.updateMany({ where: { email }, data: { isAdmin: false } })
-      return NextResponse.json({ ok: true, revoked: email, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, revoked: email, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     // Remove as contas de teste criadas durante o desenvolvimento (não
@@ -327,7 +347,7 @@ export async function POST(req: NextRequest) {
     if (action === 'test-email') {
       if (!admin.email) return NextResponse.json({ error: 'Sua conta não tem e-mail cadastrado.' }, { status: 400 })
       await sendTestEmail(admin.email)
-      return NextResponse.json({ ok: true, sentTo: admin.email, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, sentTo: admin.email, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     // Prévia fiel do e-mail real de "compra aprovada" — mesmo template, mesma
@@ -339,7 +359,7 @@ export async function POST(req: NextRequest) {
       if (!email) return NextResponse.json({ error: 'Informe o e-mail de destino.' }, { status: 400 })
       const demoPassword = generatePassword()
       await sendAccessEmailOrThrow({ to: email, planLabel: PLAN_LABELS[plan] ?? plan, isNewAccount: true, password: demoPassword })
-      return NextResponse.json({ ok: true, sentTo: email, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, sentTo: email, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     // Dispara um evento de teste (purchase_approved) pro webhook já cadastrado
@@ -381,7 +401,7 @@ export async function POST(req: NextRequest) {
     if (action === 'cleanup-dev-test-accounts') {
       const emails = ['teste.claude.infobook@gmail.com', 'teste.claude.free@gmail.com']
       const result = await prisma.user.deleteMany({ where: { email: { in: emails } } })
-      return NextResponse.json({ ok: true, removedAccounts: result.count, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, removedAccounts: result.count, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     if (action === 'clear') {
@@ -394,7 +414,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         removed: { sales: sales.count, structures: structures.count },
-        status: await getStatus(admin.id),
+        status: await getStatus(admin.id, isMasterUser(admin)),
       })
     }
 
@@ -425,7 +445,7 @@ export async function POST(req: NextRequest) {
           products: result.products.map(({ plan, name, id, created, deliveryLinkSet, deliveryLinkError }) => ({ plan, name, id, created, deliveryLinkSet, deliveryLinkError })),
           webhook: { id: result.webhook.id, url: result.webhook.url, created: result.webhook.created, secretStored: Boolean(result.webhook.secret) },
         },
-        status: await getStatus(admin.id),
+        status: await getStatus(admin.id, isMasterUser(admin)),
       })
     }
 
@@ -451,7 +471,7 @@ export async function POST(req: NextRequest) {
           create: { key, valueEnc: encryptJson({ url }) },
         })
       }
-      return NextResponse.json({ ok: true, status: await getStatus(admin.id) })
+      return NextResponse.json({ ok: true, status: await getStatus(admin.id, isMasterUser(admin)) })
     }
 
     return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 })

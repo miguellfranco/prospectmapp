@@ -19,6 +19,15 @@ export function isAdminUser(user: PlanUser): boolean {
   return user.isAdmin === true
 }
 
+// Só o dono (MASTER_EMAIL) — diferente de isAdminUser, que também é true para
+// admins promovidos (ex.: afiliados). Usado para restringir ações sensíveis
+// (gerenciar outros admins, configurar Cakto, testar e-mail/webhook) que só
+// o dono pode fazer — um admin promovido não pode promover/derrubar outros.
+export function isMasterUser(user: PlanUser): boolean {
+  const master = process.env.MASTER_EMAIL?.trim().toLowerCase()
+  return Boolean(master && user.email?.toLowerCase() === master)
+}
+
 export function hasActiveAccess(user: PlanUser): boolean {
   // Administradores (dono + promovidos no Super Admin) sempre têm acesso
   if (isAdminUser(user)) return true

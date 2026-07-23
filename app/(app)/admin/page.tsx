@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { PageHeader, brl } from '@/components/lz/ui'
 
 interface AdminStatus {
+  isMaster: boolean
   admins: { email: string; name: string | null }[]
   masterEmail: string | null
   seedSalesCount: number
@@ -271,6 +272,11 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Cakto, teste de e-mail/webhook e gestão de administradores — exclusivo
+          do dono (MASTER_EMAIL). Admins promovidos (ex.: afiliados) não veem
+          nem podem chamar essas ações (bloqueadas no backend também). */}
+      {status.isMaster && (
+      <>
       {/* Cakto — canal de afiliados: setup 1-clique dos produtos + webhook */}
       <div className="lz-card p-6 mb-4">
         <div className="flex items-center gap-2 mb-1">
@@ -482,6 +488,8 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Faturamento sob medida — valores exatos por período */}
       <div className="lz-card p-6 mb-4">
