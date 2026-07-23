@@ -38,6 +38,8 @@ function esc(s: string): string {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+const CHECK_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+
 export function isValidEbookDesign(d: any): d is EbookDesign {
   return Boolean(d?.title && Array.isArray(d?.pages) && d.pages.length >= 4 && d.pages.every((p: any) => p?.title))
 }
@@ -70,6 +72,9 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed', opts: Eb
   const coverImg = opts.coverImageDataUri
     ? `<div class="cover-art"><img src="${opts.coverImageDataUri}" alt="" /></div>`
     : ''
+  // Sem capa gerada por IA, o marca d'água grande do ícone do nicho no fundo
+  // já dá um ar "desenhado" pra capa em vez de só gradiente liso.
+  const coverWatermark = !opts.coverImageDataUri ? `<div class="cover-watermark">${nicheIconSvg(opts.niche ?? '', 340)}</div>` : ''
 
   const pagesHtml = design.pages.map((p, idx) => {
     const pageNum = idx + 2
@@ -78,7 +83,7 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed', opts: Eb
     const paragraphs = (p.paragraphs ?? []).map((t) => `<p class="para rv">${esc(t)}</p>`).join('\n')
 
     const bullets = (p.bullets ?? []).length
-      ? `<div class="cards">${(p.bullets ?? []).map((b) => `<div class="card rv"><span class="tick">✦</span><span>${esc(b)}</span></div>`).join('')}</div>`
+      ? `<div class="cards">${(p.bullets ?? []).map((b) => `<div class="card rv"><span class="tick">${CHECK_SVG}</span><span>${esc(b)}</span></div>`).join('')}</div>`
       : ''
 
     const steps = (p.steps ?? []).length
@@ -127,6 +132,9 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed', opts: Eb
   .cover { background: radial-gradient(120% 90% at 80% -10%, ${accent}55, transparent 55%),
     radial-gradient(100% 80% at -10% 110%, ${accent}40, transparent 50%), linear-gradient(150deg, #14101f, #201535 70%, #191026);
     color: #fff; display: flex; flex-direction: column; justify-content: center; min-height: 760px; }
+  .cover-watermark { position: absolute; right: -60px; bottom: -60px; opacity: 0.08; color: #fff; pointer-events: none; }
+  .cover-watermark svg { display: block; }
+  .cover > * { position: relative; }
   .cover .brand { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 7px 20px 7px 16px; border-radius: 999px; font-size: 12px;
     letter-spacing: 3px; text-transform: uppercase; font-weight: 700; border: 1px solid ${accent}88; color: #e6ddff;
     background: ${accent}26; margin-bottom: 32px; }
@@ -149,7 +157,8 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed', opts: Eb
   .cards { display: grid; gap: 12px; margin: 22px 0; }
   .card { display: flex; gap: 14px; align-items: flex-start; background: linear-gradient(135deg, ${accent}0d, ${accent}05);
     border: 1px solid ${accent}26; border-radius: 16px; padding: 16px 20px; color: #3d3752; font-size: .98rem; }
-  .tick { color: ${accent}; font-size: 1.05rem; line-height: 1.6; }
+  .tick { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    background: ${accent}1a; color: ${accent}; margin-top: 1px; }
   .steps { display: grid; gap: 14px; margin: 24px 0; counter-reset: st; }
   .step { display: flex; gap: 18px; align-items: flex-start; background: #faf9fd; border: 1px solid #eceafa;
     border-radius: 18px; padding: 18px 22px; }
@@ -182,6 +191,7 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed', opts: Eb
 <body>
 
 <section class="page cover">
+  ${coverWatermark}
   <span class="brand">${nicheIcon}E-book exclusivo</span>
   ${coverImg}
   <h1>${esc(design.title)}</h1>

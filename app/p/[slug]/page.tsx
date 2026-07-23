@@ -92,7 +92,7 @@ export default async function PublicLandingPage({ params }: { params: { slug: st
         display: 'inline-block', background: cardBg, border: `1px solid ${cardBorder}`,
         color: textSoft, borderRadius: 14, padding: '16px 36px', fontSize: 14,
       }}>
-        Em breve disponível para compra
+        Link de compra ainda não configurado
       </span>
     )
   )

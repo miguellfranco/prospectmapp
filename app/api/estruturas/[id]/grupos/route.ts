@@ -12,17 +12,15 @@ const COUNTRY_LABELS: Record<string, string> = { BR: 'Brasil', PT: 'Portugal', U
 
 // Passo 4 do wizard — descoberta de comunidades do nicho.
 //
-// Abordagem honesta e sem depender de nenhuma API paga/terceira: para
-// Facebook, o link vai direto pra busca NATIVA de grupos do próprio Facebook
-// (facebook.com/search/groups/?q=...) já com o termo do nicho preenchido —
-// mesma lógica usada por concorrentes (clica e cai numa busca dentro do
-// Facebook já filtrada por "grupos", em vez de uma busca genérica no Google,
-// que o Facebook não deixa mais indexar direito desde 2018). WhatsApp não tem
-// um "buscador de grupos" nativo equivalente, então usamos uma busca do
-// Google já otimizada (inurl:chat.whatsapp.com casa com o próprio endereço do
-// convite, que é o que de fato aparece indexado). Nenhum resultado é
-// pré-buscado/inventado — cada link leva a uma busca real que o próprio
-// usuário navega e escolhe os grupos que quiser entrar.
+// IMPORTANTE (2026-07-23): a versão anterior usava
+// "facebook.com/search/groups/?q=..." — testado direto e confirmado que dá
+// 404 (a Facebook removeu essa URL de busca por tipo pra quem não está
+// logado, se é que um dia funcionou assim). NÃO reintroduzir esse link sem
+// testar de novo primeiro. Voltamos pro formato comprovadamente confiável:
+// busca no Google (carrega sempre, sem exigir login, sem 404) restrita ao
+// domínio certo — não é um resultado "perfeito" (o usuário ainda precisa
+// escolher o grupo na lista de resultados), mas é um link que NUNCA quebra,
+// o que importa mais do que um link "inteligente" que não abre.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -68,7 +66,7 @@ Responda APENAS com JSON válido:
         structureId: structure.id,
         platform: 'facebook',
         groupName: `Grupos de Facebook sobre "${kw}"`,
-        groupUrl: `https://www.facebook.com/search/groups/?q=${encodeURIComponent(kw)}`,
+        groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${kw}`)}`,
         country,
       },
       {
