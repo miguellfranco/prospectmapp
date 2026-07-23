@@ -17,7 +17,17 @@ type QueryPlan = { platform: 'facebook' | 'whatsapp'; kw: string; term: string }
 function buildQueries(keywords: string[]): QueryPlan[] {
   const queries: QueryPlan[] = []
   for (const kw of keywords) {
+    // Desde 2018 o Facebook deixou de permitir que o Google indexe a maioria
+    // das páginas de grupo (mudança de privacidade da própria plataforma) —
+    // por isso "site:facebook.com/groups" sozinho quase não trazia nada.
+    // Mantemos essa busca (ainda pega grupos abertos/antigos que sobraram
+    // indexados) e somamos duas outras: intext: acha QUALQUER página (blog,
+    // fórum, diretório) que cite o link literal de um grupo; a busca em
+    // linguagem natural acha posts/diretórios de "melhores grupos" que listam
+    // vários links reais de uma vez — isso é o que de fato é bem indexado.
     queries.push({ platform: 'facebook', kw, term: `site:facebook.com/groups ${kw}` })
+    queries.push({ platform: 'facebook', kw, term: `intext:"facebook.com/groups" ${kw}` })
+    queries.push({ platform: 'facebook', kw, term: `"grupo no facebook" ${kw} participar entrar` })
     // "chat.whatsapp.com" entre aspas como frase de texto raramente aparece na
     // página (o link fica só na URL) — por isso a busca antiga quase nunca
     // trazia resultado. inurl: casa com o próprio endereço do convite, que É
@@ -160,7 +170,20 @@ Responda APENAS com JSON válido:
       }
     }
 
-    const groups = rows.length ? await prisma.$transaction(rows.map((data) => prisma.outreachGroup.create({ data }))) : []
+    // Com 5 palavras-chave x até 3 buscas por plataforma, dava pra virar uma
+    // lista enorme e cheia de resultados fracos (ex: intext: pode trazer
+    // página genérica só citando o termo). Prioriza resultado real sobre link
+    // de busca manual e corta em 10 por plataforma pra manter a lista útil.
+    const capped: typeof rows = []
+    for (const platform of ['facebook', 'whatsapp'] as const) {
+      const forPlatform = rows
+        .filter((r) => r.platform === platform)
+        .sort((a, b) => Number(a.isFallbackLink) - Number(b.isFallbackLink))
+        .slice(0, 10)
+      capped.push(...forPlatform)
+    }
+
+    const groups = capped.length ? await prisma.$transaction(capped.map((data) => prisma.outreachGroup.create({ data }))) : []
 
     return NextResponse.json({ groups })
   } catch (e: any) {
