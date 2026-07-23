@@ -12,34 +12,61 @@ const COUNTRY_LABELS: Record<string, string> = { BR: 'Brasil', PT: 'Portugal', U
 const COUNTRY_CODES: Record<string, string> = { BR: 'br', PT: 'pt', US: 'us' }
 const LANG_CODES: Record<string, string> = { BR: 'pt-BR', PT: 'pt-PT', US: 'en' }
 
-type QueryPlan = { platform: 'facebook' | 'whatsapp'; kw: string; term: string }
+type QueryPlan = { platform: 'facebook' | 'whatsapp'; kw: string; term: string; strict: 'facebook-group' | 'whatsapp-invite' | null }
+
+// Só aceita como "resultado real" uma URL que É a página do grupo em si —
+// descarta post/foto/evento/about dentro do grupo, que apareciam nos testes
+// como resultado de "site:facebook.com/groups" mas não são o grupo (são
+// conteúdo de dentro dele, não dá pra "entrar no grupo" por ali).
+function isRealFacebookGroupUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    if (!/(^|\.)facebook\.com$/i.test(u.hostname)) return false
+    return /^\/groups\/[^/]+\/?$/.test(u.pathname)
+  } catch {
+    return false
+  }
+}
+
+// Só aceita um link de convite de WhatsApp de verdade (chat.whatsapp.com/CODIGO) —
+// descarta qualquer outra coisa que a busca tenha trazido por engano.
+function isRealWhatsappInviteUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    return u.hostname === 'chat.whatsapp.com' && /^\/[A-Za-z0-9]+\/?$/.test(u.pathname)
+  } catch {
+    return false
+  }
+}
 
 function buildQueries(keywords: string[]): QueryPlan[] {
   const queries: QueryPlan[] = []
   for (const kw of keywords) {
-    // Desde 2018 o Facebook deixou de permitir que o Google indexe a maioria
-    // das páginas de grupo (mudança de privacidade da própria plataforma) —
-    // por isso "site:facebook.com/groups" sozinho quase não trazia nada.
-    // Mantemos essa busca (ainda pega grupos abertos/antigos que sobraram
-    // indexados) e somamos duas outras: intext: acha QUALQUER página (blog,
-    // fórum, diretório) que cite o link literal de um grupo; a busca em
-    // linguagem natural acha posts/diretórios de "melhores grupos" que listam
-    // vários links reais de uma vez — isso é o que de fato é bem indexado.
-    queries.push({ platform: 'facebook', kw, term: `site:facebook.com/groups ${kw}` })
-    queries.push({ platform: 'facebook', kw, term: `intext:"facebook.com/groups" ${kw}` })
-    queries.push({ platform: 'facebook', kw, term: `"grupo no facebook" ${kw} participar entrar` })
+    // site:facebook.com/groups ainda é a única busca no Google que tem chance
+    // de achar a página do GRUPO em si (não um post/página/vídeo qualquer que
+    // apenas cite o termo) — por isso é a única mantida para Facebook, e o
+    // resultado passa por isRealFacebookGroupUrl antes de contar como real.
+    // Testes anteriores com intext:/linguagem natural traziam posts, páginas
+    // de empresa e vídeos — removidos por trazerem só ruído.
+    queries.push({ platform: 'facebook', kw, term: `site:facebook.com/groups ${kw}`, strict: 'facebook-group' })
     // "chat.whatsapp.com" entre aspas como frase de texto raramente aparece na
     // página (o link fica só na URL) — por isso a busca antiga quase nunca
-    // trazia resultado. inurl: casa com o próprio endereço do convite, que É
-    // indexado; a segunda variante pega páginas/diretórios que listam vários
-    // convites reais de uma vez (mais fácil de o Google indexar que o convite avulso).
-    queries.push({ platform: 'whatsapp', kw, term: `inurl:chat.whatsapp.com grupo ${kw}` })
-    queries.push({ platform: 'whatsapp', kw, term: `"grupos de whatsapp" ${kw} entrar lista` })
+    // trazia resultado. inurl: casa com o próprio endereço do convite.
+    queries.push({ platform: 'whatsapp', kw, term: `inurl:chat.whatsapp.com grupo ${kw}`, strict: 'whatsapp-invite' })
+    // Diretórios/posts de "lista de grupos" continuam válidos mesmo não sendo
+    // um convite direto — por isso essa variante não passa pelo filtro estrito.
+    queries.push({ platform: 'whatsapp', kw, term: `"grupos de whatsapp" ${kw} entrar lista`, strict: null })
   }
   return queries
 }
 
-function fallbackUrl(q: QueryPlan) {
+function fallbackUrl(q: QueryPlan): string {
+  if (q.platform === 'facebook') {
+    // Busca nativa do próprio Facebook filtrada por "grupos" — sempre mostra
+    // grupos de verdade (nunca posts/páginas/vídeos soltos), diferente de uma
+    // busca genérica no Google que o Facebook não deixa mais indexar direito.
+    return `https://www.facebook.com/search/groups/?q=${encodeURIComponent(q.kw)}`
+  }
   return `https://www.google.com/search?q=${encodeURIComponent(q.term)}`
 }
 
@@ -48,11 +75,13 @@ function fallbackUrl(q: QueryPlan) {
 // Abordagem honesta: não fazemos scraping do Facebook/WhatsApp (viola os
 // termos dessas plataformas e não retorna dados confiáveis). Em vez disso, a
 // IA gera palavras-chave certeiras do nicho e rodamos buscas reais no Google
-// (via Apify) para cada uma — cada resultado salvo é uma página real que a
-// busca retornou (grupo, convite ou diretório de convites), nunca inventada.
-// Se uma busca específica não trouxer nenhum resultado, caímos para um link
-// de busca manual só para aquele caso (marcado isFallbackLink, mostrado
-// diferente na tela) em vez de deixar a lista vazia.
+// (via Apify) para cada uma — cada resultado salvo passa por um filtro de URL
+// que garante que é a página do GRUPO em si (nunca um post/página/vídeo
+// avulso), nunca inventado. Se uma busca específica não passar no filtro,
+// caímos para um link de busca (marcado isFallbackLink, mostrado diferente na
+// tela): busca nativa "grupos" do próprio Facebook, ou busca no Google para
+// WhatsApp — nunca deixamos a lista vazia, mas também nunca fingimos que um
+// resultado ruim é um grupo de verdade.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -70,10 +99,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const lang = country === 'US' ? 'inglês' : 'português'
 
-  const prompt = `Liste palavras-chave para encontrar comunidades online (grupos de Facebook e WhatsApp) sobre o nicho "${structure.niche}"${structure.subNiche ? ` / "${structure.subNiche}"` : ''}, público de ${COUNTRY_LABELS[country]}, em ${lang}.
+  // Busca pelo nicho GRANDE ("Emagrecimento", "Finanças"...), não pela dor
+  // específica ("secar barriga em casa com treinos curtos") — comunidades
+  // reais existem e são achadas pelo tema amplo; uma dor tão específica quase
+  // nunca tem grupo dedicado, e a busca só volta vazia.
+  const prompt = `Liste palavras-chave AMPLAS para encontrar comunidades online (grupos de Facebook e WhatsApp) sobre o nicho "${structure.niche}", público de ${COUNTRY_LABELS[country]}, em ${lang}.
+
+O foco do produto dentro desse nicho é "${structure.subNiche ?? structure.title}", mas isso é só contexto — NÃO gere palavras-chave restritas a essa dor específica, pois dificilmente existe grupo dedicado a algo tão nichado. Gere termos genéricos e populares do nicho amplo (ex: para o nicho "Emagrecimento", termos como "emagrecimento", "dieta e exercício", "vida saudável", "perder peso" — nunca algo como "secar barriga em casa com treinos curtos").
 
 Responda APENAS com JSON válido:
-{ "keywords": ["4 a 5 termos curtos de busca que pessoas usam para nomear grupos desse nicho"] }`
+{ "keywords": ["4 a 5 termos curtos e amplos que pessoas realmente usam para nomear grupos desse nicho"] }`
 
   try {
     const raw = await geminiGenerate(prompt, { fast: true, maxOutputTokens: 1024, temperature: 0.7, json: true })
@@ -81,14 +116,15 @@ Responda APENAS com JSON válido:
     try {
       keywords = parseJsonLoose<{ keywords: string[] }>(raw)?.keywords ?? []
     } catch { /* cai no fallback abaixo */ }
-    if (!keywords.length) keywords = [structure.niche, structure.subNiche ?? structure.title]
+    if (!keywords.length) keywords = [structure.niche] // fallback também amplo, nunca a dor específica
     keywords = keywords.filter(Boolean).slice(0, 5)
 
     const queries = buildQueries(keywords)
 
-    // Resultados reais por busca: query -> lista de {title, url}. Preenchido
-    // via Apify quando disponível; queries que não vierem aqui (token ausente,
-    // erro, ou zero resultados) caem no fallback de link manual.
+    // Resultados reais por busca: query -> lista de {title, url}, já filtrados
+    // pelo isReal*Url quando a busca é "strict". Preenchido via Apify quando
+    // disponível; queries que não vierem aqui (token ausente/inválido, erro,
+    // timeout, ou zero resultados aprovados no filtro) caem no link de busca.
     const resultsByTerm = new Map<string, { title: string; url: string }[]>()
 
     const apifyToken = process.env.APIFY_API_TOKEN
@@ -114,14 +150,13 @@ Responda APENAS com JSON válido:
             for (const item of items) {
               const term = item?.searchQuery?.term
               if (!term) continue
+              const q = queries.find((x) => x.term === term)
               const organic = Array.isArray(item?.organicResults) ? item.organicResults : []
-              resultsByTerm.set(
-                term,
-                organic
-                  .filter((r: any) => r?.url && r?.title)
-                  .slice(0, 3)
-                  .map((r: any) => ({ title: r.title, url: r.url }))
-              )
+              const validator = q?.strict === 'facebook-group' ? isRealFacebookGroupUrl
+                : q?.strict === 'whatsapp-invite' ? isRealWhatsappInviteUrl
+                : null
+              const filtered = organic.filter((r: any) => r?.url && r?.title && (!validator || validator(r.url)))
+              resultsByTerm.set(term, filtered.slice(0, 3).map((r: any) => ({ title: r.title, url: r.url })))
             }
           }
         } else {
@@ -130,6 +165,8 @@ Responda APENAS com JSON válido:
       } catch (apifyError) {
         console.error('Erro ao chamar Apify google-search-scraper:', apifyError)
       }
+    } else {
+      console.error('APIFY_API_TOKEN ausente — descoberta de grupos vai cair 100% no link de busca manual.')
     }
 
     // Regenerar substitui a lista anterior (mesmo país ou não — mantém a tela limpa)
@@ -154,7 +191,7 @@ Responda APENAS com JSON válido:
           })
         }
       } else {
-        // nenhum resultado real para esta busca — link manual como último recurso
+        // nenhum resultado aprovado no filtro para esta busca — link de busca como último recurso
         const url = fallbackUrl(q)
         if (!seenUrls.has(url)) {
           seenUrls.add(url)
@@ -170,10 +207,8 @@ Responda APENAS com JSON válido:
       }
     }
 
-    // Com 5 palavras-chave x até 3 buscas por plataforma, dava pra virar uma
-    // lista enorme e cheia de resultados fracos (ex: intext: pode trazer
-    // página genérica só citando o termo). Prioriza resultado real sobre link
-    // de busca manual e corta em 10 por plataforma pra manter a lista útil.
+    // Prioriza resultado real (já filtrado) sobre link de busca manual e corta
+    // em 10 por plataforma pra manter a lista útil.
     const capped: typeof rows = []
     for (const platform of ['facebook', 'whatsapp'] as const) {
       const forPlatform = rows
