@@ -3,6 +3,8 @@
 // certinho página por página). HTML 100% autossuficiente — funciona no preview
 // embutido do wizard e no arquivo baixado pelo usuário.
 
+import { nicheIconSvg } from './niche-icons'
+
 export interface EbookStep { title: string; text: string }
 
 export interface EbookPage {
@@ -56,9 +58,18 @@ export function ebookDesignToMarkdown(d: EbookDesign): string {
   return out.join('\n\n')
 }
 
-export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed'): string {
+export interface EbookHtmlOptions {
+  coverImageDataUri?: string | null // capa ilustrada gerada por IA (data URI) — opcional, degrada bem sem ela
+  niche?: string // usado só para escolher o ícone decorativo do nicho
+}
+
+export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed', opts: EbookHtmlOptions = {}): string {
   let chapterCount = 0
   const totalPages = design.pages.length + 1 // + capa
+  const nicheIcon = nicheIconSvg(opts.niche ?? '', 16)
+  const coverImg = opts.coverImageDataUri
+    ? `<div class="cover-art"><img src="${opts.coverImageDataUri}" alt="" /></div>`
+    : ''
 
   const pagesHtml = design.pages.map((p, idx) => {
     const pageNum = idx + 2
@@ -86,7 +97,7 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed'): string 
 
     return `
   <section class="page">
-    ${label ? `<div class="chip rv">${esc(label)}</div>` : ''}
+    ${label ? `<div class="chip rv">${nicheIcon}<span>${esc(label)}</span></div>` : ''}
     <h2 class="rv">${esc(p.title)}</h2>
     ${p.subtitle ? `<p class="sub rv">${esc(p.subtitle)}</p>` : ''}
     ${p.intro ? `<p class="para lead rv">${esc(p.intro)}</p>` : ''}
@@ -116,17 +127,21 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed'): string 
   .cover { background: radial-gradient(120% 90% at 80% -10%, ${accent}55, transparent 55%),
     radial-gradient(100% 80% at -10% 110%, ${accent}40, transparent 50%), linear-gradient(150deg, #14101f, #201535 70%, #191026);
     color: #fff; display: flex; flex-direction: column; justify-content: center; min-height: 760px; }
-  .cover .brand { display: inline-flex; align-self: flex-start; padding: 7px 20px; border-radius: 999px; font-size: 12px;
+  .cover .brand { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 7px 20px 7px 16px; border-radius: 999px; font-size: 12px;
     letter-spacing: 3px; text-transform: uppercase; font-weight: 700; border: 1px solid ${accent}88; color: #e6ddff;
-    background: ${accent}26; margin-bottom: 48px; }
+    background: ${accent}26; margin-bottom: 32px; }
+  .cover-art { align-self: flex-start; width: min(320px, 70%); aspect-ratio: 1; border-radius: 22px; overflow: hidden;
+    margin-bottom: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); }
+  .cover-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .cover h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); line-height: 1.12; font-weight: 800; letter-spacing: -1px; margin-bottom: 22px; }
   .cover .tag { font-size: 1.1rem; color: #cfc6e8; max-width: 520px; line-height: 1.65; }
   .cover .rule { width: 84px; height: 5px; border-radius: 99px; background: linear-gradient(90deg, ${accent}, #c4b5fd); margin: 36px 0; }
   .cover .foot { margin-top: auto; padding-top: 48px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #9d92be; }
 
   /* ===== PÁGINAS ===== */
-  .chip { display: inline-flex; padding: 6px 18px; border-radius: 999px; background: ${accent}14; color: ${accent};
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 18px; border-radius: 999px; background: ${accent}14; color: ${accent};
     font-size: 12px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 22px; }
+  .chip svg { flex-shrink: 0; }
   h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.6px; line-height: 1.2; margin-bottom: 12px; color: #1c1826; }
   .sub { color: #6d6786; font-size: 1.02rem; margin-bottom: 18px; }
   .para { color: #4b4560; font-size: 1.02rem; margin-bottom: 16px; }
@@ -167,7 +182,8 @@ export function buildEbookHtml(design: EbookDesign, accent = '#7c3aed'): string 
 <body>
 
 <section class="page cover">
-  <span class="brand">E-book exclusivo</span>
+  <span class="brand">${nicheIcon}E-book exclusivo</span>
+  ${coverImg}
   <h1>${esc(design.title)}</h1>
   <div class="rule"></div>
   ${design.subtitle ? `<p class="tag">${esc(design.subtitle)}</p>` : ''}

@@ -2,12 +2,16 @@
 // onde quiser (Netlify Drop, Vercel, Hostinger...) — zero dependência da
 // nossa infraestrutura. Mesmo design da pré-visualização /p/[slug].
 
+import { nicheIconSvg } from './niche-icons'
+
 export interface ExportLandingInput {
   productName: string
   priceDisplay: string | null
   checkoutUrl: string | null
   primaryColor: string
   secondaryColor: string
+  niche?: string // usado só para escolher o ícone decorativo do nicho
+  coverImageDataUri?: string | null // capa do e-book gerada por IA — usada como mockup do produto
   copy: {
     headline: string
     subheadline?: string
@@ -32,12 +36,14 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 export function buildLandingHtml(input: ExportLandingInput): string {
-  const { productName, priceDisplay, checkoutUrl, primaryColor: primary, secondaryColor: bg, copy } = input
+  const { productName, priceDisplay, checkoutUrl, primaryColor: primary, secondaryColor: bg, copy, niche, coverImageDataUri } = input
   const isLight = bg.toLowerCase() === '#ffffff'
   const text = isLight ? '#18181b' : '#f4f4f7'
   const soft = isLight ? '#52525b' : '#a1a1aa'
   const cardBg = isLight ? '#f8f8fb' : 'rgba(255,255,255,0.04)'
   const cardBorder = isLight ? '#e4e4ee' : 'rgba(255,255,255,0.09)'
+  const nicheIcon = nicheIconSvg(niche ?? '', 14)
+  const mockup = coverImageDataUri ? `<div class="mockup"><img src="${coverImageDataUri}" alt="" /></div>` : ''
 
   const cta = checkoutUrl
     ? `<a class="cta" href="${esc(checkoutUrl)}">${esc(copy.cta ?? 'QUERO O MEU AGORA')}</a>`
@@ -66,9 +72,12 @@ export function buildLandingHtml(input: ExportLandingInput): string {
   .hero { position: relative; overflow: hidden; padding: 88px 24px 72px; text-align: center; }
   .glow { position: absolute; top: -160px; left: 50%; transform: translateX(-50%); width: 720px; height: 420px;
     background: ${hexToRgba(primary, 0.22)}; filter: blur(130px); border-radius: 50%; pointer-events: none; }
-  .badge { display: inline-block; padding: 6px 18px; border-radius: 999px; border: 1px solid ${hexToRgba(primary, 0.5)};
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 18px; border-radius: 999px; border: 1px solid ${hexToRgba(primary, 0.5)};
     background: ${hexToRgba(primary, 0.12)}; color: ${primary}; font-size: 12px; font-weight: 700;
     letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 28px; }
+  .mockup { width: min(260px, 60%); aspect-ratio: 1; margin: 0 auto 32px; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 24px 60px ${hexToRgba(primary, 0.3)}; border: 1px solid ${cardBorder}; }
+  .mockup img { width: 100%; height: 100%; object-fit: cover; display: block; }
   h1 { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.15; font-weight: 800; margin-bottom: 22px; }
   .sub { font-size: 19px; line-height: 1.65; color: ${soft}; max-width: 640px; margin: 0 auto 36px; }
   .cta { display: inline-block; background: linear-gradient(135deg, ${primary}, ${hexToRgba(primary, 0.75)});
@@ -102,7 +111,8 @@ export function buildLandingHtml(input: ExportLandingInput): string {
 <section class="hero">
   <div class="glow"></div>
   <div class="wrap" style="position:relative">
-    <span class="badge">E-book digital · acesso imediato</span>
+    <span class="badge">${nicheIcon}E-book digital · acesso imediato</span>
+    ${mockup}
     <h1>${esc(copy.headline)}</h1>
     ${copy.subheadline ? `<p class="sub">${esc(copy.subheadline)}</p>` : ''}
     ${cta}

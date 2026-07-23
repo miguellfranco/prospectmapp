@@ -23,7 +23,7 @@ interface StructureDetail {
   status: string
   product: {
     id: string; name: string; content: string | null; designJson: string | null; accentColor: string; price: number | null
-    paymentIntegrationId: string | null; checkoutUrl: string | null
+    paymentIntegrationId: string | null; checkoutUrl: string | null; coverImageDataUri: string | null
   } | null
   landingPage: {
     slug: string; primaryColor: string; secondaryColor: string; publishedAt: string | null
@@ -157,7 +157,12 @@ function EstruturaWizard() {
     const p = structure?.product
     if (!p) return null
     if (p.designJson) {
-      try { return buildEbookHtml(JSON.parse(p.designJson), ebookAccent) } catch { /* cai no texto */ }
+      try {
+        return buildEbookHtml(JSON.parse(p.designJson), ebookAccent, {
+          coverImageDataUri: p.coverImageDataUri,
+          niche: structure?.niche,
+        })
+      } catch { /* cai no texto */ }
     }
     if (p.content) {
       return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${p.name}</title>
@@ -207,6 +212,8 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
       checkoutUrl: structure!.product?.checkoutUrl ?? null,
       primaryColor: lp.primaryColor,
       secondaryColor: lp.secondaryColor,
+      niche: structure!.niche,
+      coverImageDataUri: structure!.product?.coverImageDataUri,
       copy,
     })
   }

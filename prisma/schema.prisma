@@ -264,6 +264,7 @@ model EbookProduct {
   name                 String
   content              String?  @db.Text // versão texto/markdown do e-book (referência/edição)
   designJson           String?  @db.Text // estrutura página-por-página do livro designado (JSON)
+  coverImageDataUri    String?  @db.Text // capa ilustrada gerada por IA (data URI base64, embutida direto no HTML — sem storage externo)
   accentColor          String   @default("#7c3aed") // cor de destaque do e-book (capa, capítulos, cards)
   price                Float?
   paymentIntegrationId String?

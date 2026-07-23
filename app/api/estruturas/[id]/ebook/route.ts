@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
-import { geminiGenerate, parseJsonLoose } from '@/lib/gemini'
+import { geminiGenerate, geminiGenerateImage, parseJsonLoose } from '@/lib/gemini'
 import { isValidEbookDesign, ebookDesignToMarkdown, type EbookDesign } from '@/lib/ebook-export'
 import { isRateLimited } from '@/lib/rate-limit'
 
@@ -73,13 +73,20 @@ REGRAS:
     const designJson = JSON.stringify(design)
     const content = ebookDesignToMarkdown(design)
 
+    // Capa ilustrada — extra visual, nunca pode derrubar a geração do e-book:
+    // se falhar (indisponível, timeout, etc.) simplesmente não salva nenhuma
+    // imagem, e a capa usa só o gradiente + ícone do nicho (como já era).
+    const coverPrompt = `Ilustração de capa de e-book digital sobre "${structure.niche}"${structure.subNiche ? `, especificamente: "${structure.subNiche}"` : ''}. Estilo flat design moderno, minimalista e editorial premium — elegante e comercial, SEM realismo fotográfico e SEM estilo cinematográfico dramático. Paleta de cores predominantemente roxo (#7c3aed) sobre fundo escuro/preto, com destaques claros. Composição limpa com bastante espaço negativo. IMPORTANTE: não inclua nenhum texto, letra, número, palavra ou marca d'água na imagem — apenas elementos gráficos/ilustração.`
+    const cover = await geminiGenerateImage(coverPrompt)
+    const coverImageDataUri = cover ? `data:${cover.mimeType};base64,${cover.base64}` : null
+
     const product = structure.product
       ? await prisma.ebookProduct.update({
           where: { id: structure.product.id },
-          data: { name: productName, content, designJson },
+          data: { name: productName, content, designJson, ...(coverImageDataUri ? { coverImageDataUri } : {}) },
         })
       : await prisma.ebookProduct.create({
-          data: { structureId: structure.id, name: productName, content, designJson },
+          data: { structureId: structure.id, name: productName, content, designJson, coverImageDataUri },
         })
 
     if (structure.status === 'rascunho') {

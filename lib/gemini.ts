@@ -95,6 +95,42 @@ export async function geminiGenerate(prompt: string, opts: GeminiOptions = {}): 
   throw new Error(`Nenhum modelo Gemini disponível para esta conta. Último erro: ${lastError}`)
 }
 
+// Gera uma imagem de capa/ilustração (modelo com saída de imagem do Gemini).
+// Nunca lança erro — retorna null em qualquer falha (chave ausente, modelo
+// indisponível, timeout, resposta sem imagem), porque a geração de capa é um
+// extra visual: a geração do e-book/produto principal não pode depender dela
+// nem travar por causa dela.
+export async function geminiGenerateImage(prompt: string, timeoutMs = 45_000): Promise<{ base64: string; mimeType: string } | null> {
+  const key = process.env.GEMINI_API_KEY
+  if (!key) return null
+  try {
+    const res = await fetch(`${GEMINI_BASE}/gemini-2.5-flash-image:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    if (!res.ok) {
+      console.error('geminiGenerateImage falhou:', res.status, await res.text().catch(() => ''))
+      return null
+    }
+    const data = await res.json()
+    const parts = data.candidates?.[0]?.content?.parts ?? []
+    const imgPart = parts.find((p: any) => p?.inlineData?.data)
+    if (!imgPart) {
+      console.error('geminiGenerateImage: resposta sem imagem', JSON.stringify(data).slice(0, 300))
+      return null
+    }
+    return { base64: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType || 'image/png' }
+  } catch (e) {
+    console.error('Erro ao gerar imagem via Gemini:', e)
+    return null
+  }
+}
+
 // Extrai JSON de uma resposta que pode vir embrulhada em ```json ... ``` ou
 // com texto solto antes/depois do objeto.
 export function parseJsonLoose<T = any>(raw: string): T {
