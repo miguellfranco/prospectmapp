@@ -8,8 +8,11 @@ const MODELS_FULL = ['gemini-flash-latest', 'gemini-3-flash-preview', 'gemini-2.
 const MODELS_FAST = ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite', 'gemini-flash-latest']
 
 // Erros que valem tentar o próximo modelo da cadeia:
-// 404 = modelo indisponível para a conta; 429 = rate limit; 503 = sobrecarga temporária
-const RETRIABLE = new Set([404, 429, 503])
+// 404 = modelo indisponível para a conta; 429 = rate limit; 503 = sobrecarga
+// temporária; 400 = argumento inválido — alguns modelos rejeitam combinações
+// de generationConfig (ex.: thinkingConfig + responseMimeType) que outros
+// aceitam, então vale tentar o próximo antes de desistir.
+const RETRIABLE = new Set([404, 429, 503, 400])
 
 export interface GeminiOptions {
   model?: string // modelo preferido (tentado primeiro); a cadeia de fallback continua depois dele
@@ -69,7 +72,10 @@ export async function geminiGenerate(prompt: string, opts: GeminiOptions = {}): 
       let attempt = await callModel(model, prompt, opts, true, key)
 
       // Alguns modelos não aceitam thinkingConfig (400) — tenta de novo sem ele
-      if (!attempt.ok && attempt.status === 400 && /thinking/i.test(attempt.body)) {
+      // no MESMO modelo antes de desistir dele. Não depende mais do texto exato
+      // do erro conter "thinking": o Google às vezes devolve uma mensagem
+      // genérica ("Request contains an invalid argument") para o mesmo motivo.
+      if (!attempt.ok && attempt.status === 400) {
         attempt = await callModel(model, prompt, opts, false, key)
       }
 
@@ -78,7 +84,7 @@ export async function geminiGenerate(prompt: string, opts: GeminiOptions = {}): 
       lastError = `${model} → HTTP ${attempt.status}: ${attempt.body.slice(0, 200)}`
       lastStatus = attempt.status
       if (RETRIABLE.has(attempt.status)) continue
-      // Erros como 401/400/500 não melhoram trocando de modelo
+      // Erros como 401/403/500 não melhoram trocando de modelo
       throw new Error(`Gemini API ${attempt.status}: ${attempt.body.slice(0, 300)}`)
     }
   }
