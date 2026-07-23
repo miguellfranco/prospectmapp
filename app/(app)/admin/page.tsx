@@ -65,6 +65,10 @@ export default function AdminPage() {
   const [caktoUrlTrimestral, setCaktoUrlTrimestral] = useState('')
   const [caktoUrlVitalicio, setCaktoUrlVitalicio] = useState('')
 
+  // Prévia do e-mail de compra aprovada
+  const [purchaseTestEmail, setPurchaseTestEmail] = useState('bertolinimiguel60@gmail.com')
+  const [purchaseTestPlan, setPurchaseTestPlan] = useState('vitalicio')
+
   function syncRevenueInputs(s: AdminStatus) {
     setRevToday(fmtBr(s.seedRevenue.today))
     setRev7(fmtBr(s.seedRevenue.last7))
@@ -109,6 +113,7 @@ export default function AdminPage() {
       if (action === 'set-cakto-checkout-urls') toast.success('Links de checkout salvos! O site já vai usá-los.')
       if (action === 'cleanup-dev-test-accounts') toast.success(d.removedAccounts ? `${d.removedAccounts} conta(s) de teste removida(s).` : 'Nenhuma conta de teste encontrada (já foi limpo antes).')
       if (action === 'test-email') toast.success(`E-mail de teste enviado para ${d.sentTo}! Confira sua caixa de entrada (e o spam).`)
+      if (action === 'test-purchase-email') toast.success(`Prévia de compra aprovada enviada para ${d.sentTo}!`)
       if (d.status) {
         setStatus(d.status)
         syncRevenueInputs(d.status)
@@ -354,6 +359,35 @@ export default function AdminPage() {
         >
           {busy === 'test-email' ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
           Enviar e-mail de teste
+        </button>
+
+        <div className="h-px my-5" style={{ background: 'var(--border-default)' }} />
+
+        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Prévia do e-mail de compra aprovada</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+          Manda o e-mail EXATO que uma compra real dispara (mesmo texto, com uma senha de exemplo) — não cria nem altera nenhuma conta, é só pra ver como chega.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 mb-3">
+          <input
+            value={purchaseTestEmail} onChange={(e) => setPurchaseTestEmail(e.target.value)}
+            placeholder="email@exemplo.com" type="email" className="lz-input font-jet text-sm"
+          />
+          <select
+            value={purchaseTestPlan} onChange={(e) => setPurchaseTestPlan(e.target.value)}
+            className="lz-input text-sm !w-auto"
+          >
+            <option value="mensal">Mensal</option>
+            <option value="trimestral">Trimestral</option>
+            <option value="vitalicio">Vitalício</option>
+          </select>
+        </div>
+        <button
+          onClick={() => run('test-purchase-email', { email: purchaseTestEmail, plan: purchaseTestPlan })}
+          disabled={busy !== null || !purchaseTestEmail.trim()}
+          className="lz-btn-primary w-full inline-flex items-center justify-center gap-2 text-sm"
+        >
+          {busy === 'test-purchase-email' ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+          Enviar prévia de compra aprovada
         </button>
       </div>
 

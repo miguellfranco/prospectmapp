@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { PLAN_DURATION_DAYS, PLAN_LABELS } from '@/lib/abacatepay'
 import { sendAccessEmail } from '@/lib/email'
 
-function generatePassword(): string {
+export function generatePassword(): string {
   return crypto.randomBytes(9).toString('base64url') // ~12 char random password
 }
 

@@ -7,7 +7,9 @@ import { isAdminUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { caktoConfigured, ensureCaktoSetup, CAKTO_CHECKOUT_URL_KEYS } from '@/lib/cakto'
 import { encryptJson, decryptJson } from '@/lib/crypto'
-import { sendTestEmail } from '@/lib/email'
+import { sendTestEmail, sendAccessEmailOrThrow } from '@/lib/email'
+import { generatePassword } from '@/lib/grant-access'
+import { PLAN_LABELS } from '@/lib/abacatepay'
 
 // Painel Super Admin (dev/QA) — exclusivo do MASTER_EMAIL.
 //
@@ -326,6 +328,18 @@ export async function POST(req: NextRequest) {
       if (!admin.email) return NextResponse.json({ error: 'Sua conta não tem e-mail cadastrado.' }, { status: 400 })
       await sendTestEmail(admin.email)
       return NextResponse.json({ ok: true, sentTo: admin.email, status: await getStatus(admin.id) })
+    }
+
+    // Prévia fiel do e-mail real de "compra aprovada" — mesmo template, mesma
+    // função (sendAccessEmail) que uma compra de verdade dispara. NÃO mexe no
+    // banco (nenhuma conta é criada/alterada) — é só pra ver como chega.
+    if (action === 'test-purchase-email') {
+      const email = String(body?.email ?? '').trim().toLowerCase()
+      const plan = String(body?.plan ?? 'vitalicio')
+      if (!email) return NextResponse.json({ error: 'Informe o e-mail de destino.' }, { status: 400 })
+      const demoPassword = generatePassword()
+      await sendAccessEmailOrThrow({ to: email, planLabel: PLAN_LABELS[plan] ?? plan, isNewAccount: true, password: demoPassword })
+      return NextResponse.json({ ok: true, sentTo: email, status: await getStatus(admin.id) })
     }
 
     if (action === 'cleanup-dev-test-accounts') {

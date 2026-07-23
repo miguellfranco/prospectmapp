@@ -41,10 +41,7 @@ async function sendViaConfiguredProvider(to: string, subject: string, html: stri
   throw new Error('Nenhum provedor de e-mail configurado (GMAIL_USER/GMAIL_APP_PASSWORD ou RESEND_API_KEY/RESEND_FROM_EMAIL).')
 }
 
-// Degrada graciosamente (só loga) se nada estiver configurado ou o envio
-// falhar — criação de conta / confirmação de pagamento não pode travar só
-// porque o e-mail não saiu.
-export async function sendAccessEmail({ to, planLabel, isNewAccount, password }: SendAccessEmailParams) {
+function buildAccessEmail({ to, planLabel, isNewAccount, password }: SendAccessEmailParams): { subject: string; html: string } {
   const loginUrl = `${process.env.NEXTAUTH_URL || 'https://infobookapp.vercel.app'}/login`
 
   const subject = isNewAccount ? 'Seu acesso ao InfoBook está pronto!' : 'Pagamento confirmado — plano renovado!'
@@ -66,11 +63,26 @@ export async function sendAccessEmail({ to, planLabel, isNewAccount, password }:
       </div>
     `
 
+  return { subject, html }
+}
+
+// Degrada graciosamente (só loga) se nada estiver configurado ou o envio
+// falhar — criação de conta / confirmação de pagamento não pode travar só
+// porque o e-mail não saiu.
+export async function sendAccessEmail(params: SendAccessEmailParams) {
+  const { subject, html } = buildAccessEmail(params)
   try {
-    await sendViaConfiguredProvider(to, subject, html)
+    await sendViaConfiguredProvider(params.to, subject, html)
   } catch (e) {
-    console.error(`Failed to send access email to ${to}:`, e)
+    console.error(`Failed to send access email to ${params.to}:`, e)
   }
+}
+
+// Mesmo e-mail exato de uma compra real (mesmo template), mas NÃO engole o
+// erro — usada só pela prévia do Super Admin, pra saber com certeza se saiu.
+export async function sendAccessEmailOrThrow(params: SendAccessEmailParams): Promise<void> {
+  const { subject, html } = buildAccessEmail(params)
+  await sendViaConfiguredProvider(params.to, subject, html)
 }
 
 // Diferente de sendAccessEmail, essa NÃO engole o erro — usada só pelo botão
