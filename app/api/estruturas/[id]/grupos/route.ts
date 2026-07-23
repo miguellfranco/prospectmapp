@@ -7,6 +7,7 @@ import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 import { geminiGenerate, parseJsonLoose } from '@/lib/gemini'
 import { isRateLimited } from '@/lib/rate-limit'
+import { whatsappDirectoryUrl } from '@/lib/whatsapp-directory'
 
 const COUNTRY_LABELS: Record<string, string> = { BR: 'Brasil', PT: 'Portugal', US: 'Estados Unidos' }
 
@@ -61,22 +62,37 @@ Responda APENAS com JSON válido:
     // Regenerar substitui a lista anterior (mesmo país ou não — mantém a tela limpa)
     await prisma.outreachGroup.deleteMany({ where: { structureId: structure.id } })
 
-    const rows = keywords.flatMap((kw) => [
-      {
-        structureId: structure.id,
-        platform: 'facebook',
-        groupName: `Grupos de Facebook sobre "${kw}"`,
-        groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${kw}`)}`,
-        country,
-      },
-      {
-        structureId: structure.id,
-        platform: 'whatsapp',
-        groupName: `Grupos de WhatsApp sobre "${kw}"`,
-        groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`inurl:chat.whatsapp.com grupo ${kw}`)}`,
-        country,
-      },
-    ])
+    const facebookRows = keywords.map((kw) => ({
+      structureId: structure.id,
+      platform: 'facebook',
+      groupName: `Grupos de Facebook sobre "${kw}"`,
+      groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${kw}`)}`,
+      country,
+    }))
+
+    // gruposwhats.app é um diretório real de convites de WhatsApp (indicado
+    // pelo usuário, slugs conferidos direto no sitemap oficial do site — ver
+    // lib/whatsapp-directory.ts). Nichos com categoria real lá ganham 1 link
+    // direto e confiável em vez de N buscas fracas no Google; nichos sem
+    // categoria correspondente caem no fallback de busca de sempre.
+    const directoryUrl = whatsappDirectoryUrl(structure.niche)
+    const whatsappRows = directoryUrl
+      ? [{
+          structureId: structure.id,
+          platform: 'whatsapp',
+          groupName: `Diretório de grupos de WhatsApp — ${structure.niche}`,
+          groupUrl: directoryUrl,
+          country,
+        }]
+      : keywords.map((kw) => ({
+          structureId: structure.id,
+          platform: 'whatsapp',
+          groupName: `Grupos de WhatsApp sobre "${kw}"`,
+          groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`inurl:chat.whatsapp.com grupo ${kw}`)}`,
+          country,
+        }))
+
+    const rows = [...facebookRows, ...whatsappRows]
 
     const groups = rows.length ? await prisma.$transaction(rows.map((data) => prisma.outreachGroup.create({ data }))) : []
 

@@ -54,7 +54,7 @@ const NICHE_ICON: Record<string, keyof typeof ICONS> = {
 
 // Reconhece o nicho tanto pelo id (ex: "emagrecimento") quanto pelo label
 // (ex: "Emagrecimento") — o texto salvo em Structure.niche costuma ser o label.
-function normalize(s: string): string {
+export function normalize(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
@@ -62,7 +62,7 @@ function normalize(s: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-const LABEL_TO_ID: Record<string, string> = {
+export const LABEL_TO_ID: Record<string, string> = {
   emagrecimento: 'emagrecimento',
   financas: 'financas',
   'renda-extra-online': 'renda-extra',
@@ -84,6 +84,14 @@ const LABEL_TO_ID: Record<string, string> = {
   'milhas-aereas': 'milhas',
   'viagem-low-cost': 'viagem',
   'skincare-masculino': 'skincare',
+}
+
+// Resolve nicho (id ou label livre) pro id canônico do catálogo (lib/ebookai-data.ts),
+// ou null se não reconhecer (nicho digitado livremente pelo usuário).
+export function resolveNicheId(nicheIdOrLabel: string): string | null {
+  const norm = normalize(nicheIdOrLabel)
+  if (NICHE_ICON[norm]) return norm
+  return LABEL_TO_ID[norm] ?? null
 }
 
 // Retorna o miolo do <svg> (só os elementos internos) pro nicho informado,
