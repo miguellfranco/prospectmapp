@@ -325,7 +325,7 @@ export async function POST(req: NextRequest) {
     if (action === 'test-email') {
       if (!admin.email) return NextResponse.json({ error: 'Sua conta não tem e-mail cadastrado.' }, { status: 400 })
       await sendTestEmail(admin.email)
-      return NextResponse.json({ ok: true, sentTo: admin.email })
+      return NextResponse.json({ ok: true, sentTo: admin.email, status: await getStatus(admin.id) })
     }
 
     if (action === 'cleanup-dev-test-accounts') {

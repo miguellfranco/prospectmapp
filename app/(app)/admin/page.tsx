@@ -109,8 +109,10 @@ export default function AdminPage() {
       if (action === 'set-cakto-checkout-urls') toast.success('Links de checkout salvos! O site já vai usá-los.')
       if (action === 'cleanup-dev-test-accounts') toast.success(d.removedAccounts ? `${d.removedAccounts} conta(s) de teste removida(s).` : 'Nenhuma conta de teste encontrada (já foi limpo antes).')
       if (action === 'test-email') toast.success(`E-mail de teste enviado para ${d.sentTo}! Confira sua caixa de entrada (e o spam).`)
-      setStatus(d.status)
-      syncRevenueInputs(d.status)
+      if (d.status) {
+        setStatus(d.status)
+        syncRevenueInputs(d.status)
+      }
     } catch (e: any) {
       toast.error(e.message)
     } finally {
