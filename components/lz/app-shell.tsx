@@ -1,26 +1,84 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/lz/sidebar'
-import { Search, Bell, ChevronDown, User, Settings, LogOut, Zap } from 'lucide-react'
+import { Search, Bell, ChevronDown, User, Settings, LogOut, Zap, ShoppingBag } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 
 const PLAN_LABEL: Record<string, string> = { vitalicio: 'VITALÍCIO', mensal: 'MENSAL', free: 'GRÁTIS' }
+
+interface SaleNotification {
+  id: string
+  amount: number
+  productName: string | null
+  buyerEmail: string | null
+  createdAt: string
+}
+
+const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+function timeAgo(iso: string): string {
+  const diffMin = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000))
+  if (diffMin < 1) return 'agora'
+  if (diffMin < 60) return `há ${diffMin} min`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `há ${diffH}h`
+  return `há ${Math.floor(diffH / 24)}d`
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession() || {}
   const [me, setMe] = useState<{ name?: string; plan?: string; email?: string } | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [unreadNotifications, setUnreadNotifications] = useState(3)
+  const [sales, setSales] = useState<SaleNotification[]>([])
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const cursorRef = useRef<string | null>(null)
+  const bootstrapped = useRef(false)
 
   useEffect(() => {
     fetch('/api/me')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setMe(d))
       .catch(() => {})
+  }, [])
+
+  // Vendas de verdade (webhook dos gateways) → toast + sino em tempo real.
+  // Só existe alguma coisa aqui se o usuário tiver um gateway conectado que
+  // já mandou pelo menos uma venda paga — sem isso o endpoint sempre volta
+  // vazio, então o sino nunca acende sozinho.
+  useEffect(() => {
+    async function poll() {
+      const qs = cursorRef.current ? `?after=${encodeURIComponent(cursorRef.current)}` : ''
+      const res = await fetch(`/api/sales/recent${qs}`).catch(() => null)
+      if (!res?.ok) return
+      const d = await res.json().catch(() => null)
+      const novas: SaleNotification[] = d?.sales ?? []
+      if (!novas.length) return
+
+      cursorRef.current = novas[novas.length - 1].createdAt
+
+      if (!bootstrapped.current) {
+        // Primeira carga: só popula o histórico do sino, sem toast nem contador
+        // (senão toda venda antiga apareceria como "nova" ao abrir o app).
+        bootstrapped.current = true
+        setSales(novas.slice().reverse())
+        return
+      }
+
+      setSales((prev) => [...novas.slice().reverse(), ...prev].slice(0, 20))
+      setUnreadNotifications((n) => n + novas.length)
+      for (const s of novas) {
+        toast.success(`Nova venda! ${s.productName ?? 'Produto'} — ${fmtBRL(s.amount)}`)
+      }
+    }
+    poll()
+    const id = setInterval(poll, 25_000)
+    return () => clearInterval(id)
   }, [])
 
   const name = me?.name ?? session?.user?.name ?? 'Usuário'
@@ -66,16 +124,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right Side: Notifications Bell + Plan Badge + Avatar Dropdown */}
           <div className="flex items-center gap-4">
-            {/* Notification Bell */}
-            <button 
-              onClick={() => setUnreadNotifications(0)}
-              className="relative p-2 rounded-lg hover:bg-zinc-900/60 transition-colors text-zinc-300 hover:text-white"
-            >
-              <Bell size={18} />
-              {unreadNotifications > 0 && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-              )}
-            </button>
+            {/* Notification Bell — vendas reais recebidas via webhook */}
+            <div className="relative">
+              <button
+                onClick={() => { setNotifOpen(!notifOpen); setUnreadNotifications(0) }}
+                className="relative p-2 rounded-lg hover:bg-zinc-900/60 transition-colors text-zinc-300 hover:text-white"
+              >
+                <Bell size={18} />
+                {unreadNotifications > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {notifOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      className="absolute right-0 mt-2 w-72 max-h-80 overflow-y-auto rounded-xl border border-[var(--border-default)] shadow-2xl p-1 z-50"
+                      style={{ background: 'rgba(10,10,24,0.98)', backdropFilter: 'blur(20px)' }}
+                    >
+                      <div className="px-3 py-2 border-b border-zinc-850">
+                        <p className="text-xs font-bold text-white">Vendas recentes</p>
+                      </div>
+                      {sales.length === 0 ? (
+                        <p className="px-3 py-4 text-xs text-zinc-500">Nenhuma venda registrada ainda.</p>
+                      ) : (
+                        sales.map((s) => (
+                          <div key={s.id} className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg hover:bg-zinc-900 transition-colors">
+                            <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(124,58,237,0.15)' }}>
+                              <ShoppingBag size={13} style={{ color: 'var(--purple-soft)' }} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs text-white truncate">{s.productName ?? 'Produto'}</p>
+                              <p className="text-[11px] text-zinc-400">{fmtBRL(s.amount)} · {timeAgo(s.createdAt)}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Plan Badge */}
             <span className="lz-badge lz-badge-hot hidden xs:inline-flex text-[10px] py-1 px-2.5 rounded-full">
