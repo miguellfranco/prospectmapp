@@ -14,9 +14,16 @@ interface SaleNotification {
   id: string
   amount: number
   productName: string | null
-  buyerEmail: string | null
+  buyerLabel: string | null
   createdAt: string
 }
+
+// Nomes fictícios pra simulação de venda (ferramenta de dev/QA, ver useEffect
+// do atalho Ctrl+Alt+V mais abaixo) — nunca usados em dado real.
+const FAKE_BUYER_NAMES = [
+  'Priscila dos Santos', 'João Pedro Oliveira', 'Maria Clara Souza', 'Lucas Ferreira',
+  'Ana Beatriz Lima', 'Rafael Martins', 'Juliana Almeida', 'Carlos Henrique Costa',
+]
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -31,7 +38,7 @@ function timeAgo(iso: string): string {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession() || {}
-  const [me, setMe] = useState<{ name?: string; plan?: string; email?: string } | null>(null)
+  const [me, setMe] = useState<{ name?: string; plan?: string; email?: string; isAdmin?: boolean } | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -39,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const cursorRef = useRef<string | null>(null)
   const bootstrapped = useRef(false)
+  const lastFakeNameRef = useRef<string | null>(null)
 
   useEffect(() => {
     fetch('/api/me')
@@ -57,8 +65,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       const res = await fetch(`/api/sales/recent${qs}`).catch(() => null)
       if (!res?.ok) return
       const d = await res.json().catch(() => null)
-      const novas: SaleNotification[] = d?.sales ?? []
-      if (!novas.length) return
+      const raw: Array<{ id: string; amount: number; productName: string | null; buyerEmail: string | null; createdAt: string }> = d?.sales ?? []
+      if (!raw.length) return
+      const novas: SaleNotification[] = raw.map((s) => ({ id: s.id, amount: s.amount, productName: s.productName, buyerLabel: s.buyerEmail, createdAt: s.createdAt }))
 
       cursorRef.current = novas[novas.length - 1].createdAt
 
@@ -80,6 +89,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const id = setInterval(poll, 25_000)
     return () => clearInterval(id)
   }, [])
+
+  // Ferramenta de dev/QA: Ctrl+Alt+V simula a MESMA notificação visual de uma
+  // venda real, só pra testar a interface. Só existe pra administradores;
+  // não cria pedido, não grava venda, não chama gateway de pagamento — tudo
+  // fica em memória no navegador e some ao recarregar a página. Usa o nome
+  // e o preço reais do último e-book gerado no sistema (leitura, sem escrita).
+  useEffect(() => {
+    if (!me?.isAdmin) return
+    async function simulateSale() {
+      const res = await fetch('/api/admin').catch(() => null)
+      if (!res?.ok) return
+      const d = await res.json().catch(() => null)
+      const lastEbook: { name: string; price: number } | null = d?.status?.lastEbook ?? null
+      if (!lastEbook) {
+        toast.error('Simulação: nenhum e-book com preço configurado ainda.')
+        return
+      }
+      let fakeName = FAKE_BUYER_NAMES[Math.floor(Math.random() * FAKE_BUYER_NAMES.length)]
+      if (FAKE_BUYER_NAMES.length > 1) {
+        while (fakeName === lastFakeNameRef.current) {
+          fakeName = FAKE_BUYER_NAMES[Math.floor(Math.random() * FAKE_BUYER_NAMES.length)]
+        }
+      }
+      lastFakeNameRef.current = fakeName
+
+      const fake: SaleNotification = {
+        id: `sim-${Date.now()}`,
+        amount: lastEbook.price,
+        productName: lastEbook.name,
+        buyerLabel: fakeName,
+        createdAt: new Date().toISOString(),
+      }
+      setSales((prev) => [fake, ...prev].slice(0, 20))
+      setUnreadNotifications((n) => n + 1)
+      toast.success(`Nova venda! ${fake.productName} — ${fmtBRL(fake.amount)} · ${fakeName}`)
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault()
+        simulateSale()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [me?.isAdmin])
 
   const name = me?.name ?? session?.user?.name ?? 'Usuário'
   const plan = me?.plan ?? 'free'
@@ -160,7 +214,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             </div>
                             <div className="min-w-0">
                               <p className="text-xs text-white truncate">{s.productName ?? 'Produto'}</p>
-                              <p className="text-[11px] text-zinc-400">{fmtBRL(s.amount)} · {timeAgo(s.createdAt)}</p>
+                              <p className="text-[11px] text-zinc-400 truncate">
+                                {fmtBRL(s.amount)} · {timeAgo(s.createdAt)}{s.buyerLabel ? ` · ${s.buyerLabel}` : ''}
+                              </p>
                             </div>
                           </div>
                         ))
