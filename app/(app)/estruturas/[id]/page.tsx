@@ -127,6 +127,11 @@ function EstruturaWizard() {
       toast.success('E-book gerado com sucesso!')
       await load()
       setStep(0)
+      // Capa ilustrada por IA: best-effort em segundo plano, não bloqueia a
+      // tela — se falhar ou demorar, o e-book já está pronto do mesmo jeito.
+      fetch(`/api/estruturas/${id}/ebook/cover`, { method: 'POST' })
+        .then(() => load())
+        .catch(() => {})
     } catch (e: any) {
       toast.error(e.message)
     } finally {

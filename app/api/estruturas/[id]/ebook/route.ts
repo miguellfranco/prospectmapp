@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
 import { hasActiveAccess, NO_ACCESS_MSG } from '@/lib/plan'
 import { prisma } from '@/lib/db'
-import { geminiGenerate, geminiGenerateImage, parseJsonLoose } from '@/lib/gemini'
+import { geminiGenerate, parseJsonLoose } from '@/lib/gemini'
 import { isValidEbookDesign, ebookDesignToMarkdown, type EbookDesign } from '@/lib/ebook-export'
 import { isRateLimited } from '@/lib/rate-limit'
 
@@ -73,20 +73,18 @@ REGRAS:
     const designJson = JSON.stringify(design)
     const content = ebookDesignToMarkdown(design)
 
-    // Capa ilustrada — extra visual, nunca pode derrubar a geração do e-book:
-    // se falhar (indisponível, timeout, etc.) simplesmente não salva nenhuma
-    // imagem, e a capa usa só o gradiente + ícone do nicho (como já era).
-    const coverPrompt = `Ilustração de capa de e-book digital sobre "${structure.niche}"${structure.subNiche ? `, especificamente: "${structure.subNiche}"` : ''}. Estilo flat design moderno, minimalista e editorial premium — elegante e comercial, SEM realismo fotográfico e SEM estilo cinematográfico dramático. Paleta de cores predominantemente roxo (#7c3aed) sobre fundo escuro/preto, com destaques claros. Composição limpa com bastante espaço negativo. IMPORTANTE: não inclua nenhum texto, letra, número, palavra ou marca d'água na imagem — apenas elementos gráficos/ilustração.`
-    const cover = await geminiGenerateImage(coverPrompt)
-    const coverImageDataUri = cover ? `data:${cover.mimeType};base64,${cover.base64}` : null
-
+    // A capa ilustrada por IA é gerada à parte, num segundo request
+    // (POST /ebook/cover), disparado pelo cliente só depois que este request
+    // já respondeu com sucesso. Gerar imagem aqui dentro somava tempo à
+    // geração de texto e estourava o limite de 60s da função (erro real visto
+    // em produção: "Task timed out after 60 seconds").
     const product = structure.product
       ? await prisma.ebookProduct.update({
           where: { id: structure.product.id },
-          data: { name: productName, content, designJson, ...(coverImageDataUri ? { coverImageDataUri } : {}) },
+          data: { name: productName, content, designJson },
         })
       : await prisma.ebookProduct.create({
-          data: { structureId: structure.id, name: productName, content, designJson, coverImageDataUri },
+          data: { structureId: structure.id, name: productName, content, designJson },
         })
 
     if (structure.status === 'rascunho') {

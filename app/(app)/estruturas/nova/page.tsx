@@ -14,6 +14,7 @@ export default function NovaEstruturaPage() {
   const [nicheId, setNicheId] = useState<string | null>(null)
   const [customNiche, setCustomNiche] = useState('')
   const [useCustomNiche, setUseCustomNiche] = useState(false)
+  const [customNicheConfirmed, setCustomNicheConfirmed] = useState(false)
   const [subNiche, setSubNiche] = useState<string | null>(null)
   const [customPain, setCustomPain] = useState('')
   const [useCustomPain, setUseCustomPain] = useState(false)
@@ -82,7 +83,7 @@ export default function NovaEstruturaPage() {
             ))}
           </div>
           <button
-            onClick={() => setUseCustomNiche(true)}
+            onClick={() => { setUseCustomNiche(true); setCustomNicheConfirmed(false); setCustomNiche('') }}
             className="mt-4 w-full px-4 py-3 rounded-xl border border-dashed text-sm inline-flex items-center justify-center gap-2 transition-colors"
             style={{ borderColor: 'var(--purple-border)', color: 'var(--purple-soft)', background: 'transparent' }}
           >
@@ -91,29 +92,37 @@ export default function NovaEstruturaPage() {
         </>
       )}
 
-      {useCustomNiche && !nicheLabel && (
+      {useCustomNiche && !customNicheConfirmed && (
         <div className="lz-card p-6 max-w-xl mx-auto">
           <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
             Qual é o seu nicho?
           </label>
           <input
             autoFocus value={customNiche} onChange={(e) => setCustomNiche(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && customNiche.trim()) setCustomNicheConfirmed(true) }}
             placeholder="Ex: Fotografia com celular" className="lz-input" maxLength={80}
           />
           <div className="flex gap-3 mt-4">
             <button onClick={() => { setUseCustomNiche(false); setCustomNiche('') }} className="lz-btn-secondary flex-1 inline-flex items-center justify-center gap-2">
               <ArrowLeft size={15} /> Voltar
             </button>
+            <button
+              onClick={() => setCustomNicheConfirmed(true)}
+              disabled={!customNiche.trim()}
+              className="lz-btn-primary flex-1 inline-flex items-center justify-center gap-2"
+            >
+              Continuar
+            </button>
           </div>
         </div>
       )}
 
       {/* Passo B: sub-nicho / dor principal */}
-      {(niche || (useCustomNiche && nicheLabel)) && (
+      {(niche || (useCustomNiche && customNicheConfirmed)) && (
         <>
           <div className="flex items-center gap-3 mb-5">
             <button
-              onClick={() => { setNicheId(null); setUseCustomNiche(false); setCustomNiche(''); setSubNiche(null); setUseCustomPain(false); setCustomPain('') }}
+              onClick={() => { setNicheId(null); setUseCustomNiche(false); setCustomNiche(''); setCustomNicheConfirmed(false); setSubNiche(null); setUseCustomPain(false); setCustomPain('') }}
               className="inline-flex items-center gap-1.5 text-sm transition-colors"
               style={{ color: 'var(--text-secondary)' }}
             >
