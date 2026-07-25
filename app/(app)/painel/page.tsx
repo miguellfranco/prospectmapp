@@ -53,6 +53,35 @@ export default function PainelPage() {
       .catch((e) => setError(e.message))
   }, [])
 
+  // Ferramenta de dev/QA (atalho Ctrl+Alt+V, admin): dá um "empurrão" visual
+  // nos números quando uma venda é simulada, só pra ver como o painel reage
+  // com uma venda de verdade. Só mexe no estado local em memória — nunca
+  // chama a API nem grava nada; some ao recarregar a página.
+  useEffect(() => {
+    function onSimulatedSale(e: Event) {
+      const amount = (e as CustomEvent<{ amount: number }>).detail?.amount
+      if (typeof amount !== 'number') return
+      const todayKey = new Date().toISOString().slice(0, 10)
+      setData((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          revenue: {
+            today: prev.revenue.today + amount,
+            last7: prev.revenue.last7 + amount,
+            last30: prev.revenue.last30 + amount,
+            allTime: prev.revenue.allTime + amount,
+          },
+          salesCount30d: prev.salesCount30d + 1,
+          salesCountAllTime: prev.salesCountAllTime + 1,
+          daily: prev.daily.map((d) => (d.date === todayKey ? { ...d, total: d.total + amount } : d)),
+        }
+      })
+    }
+    window.addEventListener('ib:simulated-sale', onSimulatedSale)
+    return () => window.removeEventListener('ib:simulated-sale', onSimulatedSale)
+  }, [])
+
   if (error) {
     return (
       <div className="p-6 md:p-10">

@@ -149,6 +149,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setSales((prev) => [fake, ...prev].slice(0, 20))
       setUnreadNotifications((n) => n + 1)
       showSaleToast(fake)
+      // Painel (se estiver aberto) escuta esse evento pra dar um "empurrão"
+      // visual nos números — só em memória, nunca grava nada; some ao
+      // recarregar a página, igual o resto dessa simulação.
+      window.dispatchEvent(new CustomEvent('ib:simulated-sale', { detail: { amount: fake.amount } }))
     }
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'v') {
