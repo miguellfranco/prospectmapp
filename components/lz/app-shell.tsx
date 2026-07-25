@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/lz/sidebar'
-import { Search, Bell, ChevronDown, User, Settings, LogOut, Zap, ShoppingBag } from 'lucide-react'
+import { Search, Bell, ChevronDown, User, Settings, LogOut, Zap, ShoppingBag, X } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -26,6 +26,33 @@ const FAKE_BUYER_NAMES = [
 ]
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+// Card de notificação de venda (nome do e-book + valor + comprador), estilo
+// pop-up do canto superior — mesmo visual pra venda real e pra simulação.
+function showSaleToast(s: SaleNotification) {
+  toast.custom(
+    (id) => (
+      <div
+        className="flex items-start gap-3 w-full rounded-xl border p-3 pr-8 relative shadow-2xl"
+        style={{ background: 'rgba(10,10,24,0.98)', borderColor: 'var(--purple-border)', backdropFilter: 'blur(20px)' }}
+      >
+        <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(124,58,237,0.18)' }}>
+          <ShoppingBag size={16} style={{ color: 'var(--purple-soft)' }} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white truncate">{s.productName ?? 'Produto'}</p>
+          <p className="text-xs text-zinc-400 truncate mt-0.5">
+            {fmtBRL(s.amount)}{s.buyerLabel ? ` · ${s.buyerLabel}` : ''}
+          </p>
+        </div>
+        <button onClick={() => toast.dismiss(id)} className="absolute top-2 right-2 text-zinc-500 hover:text-white transition-colors">
+          <X size={14} />
+        </button>
+      </div>
+    ),
+    { position: 'top-right', duration: 6000 },
+  )
+}
 
 function timeAgo(iso: string): string {
   const diffMin = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000))
@@ -81,9 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       setSales((prev) => [...novas.slice().reverse(), ...prev].slice(0, 20))
       setUnreadNotifications((n) => n + novas.length)
-      for (const s of novas) {
-        toast.success(`Nova venda! ${s.productName ?? 'Produto'} — ${fmtBRL(s.amount)}`)
-      }
+      for (const s of novas) showSaleToast(s)
     }
     poll()
     const id = setInterval(poll, 25_000)
@@ -123,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       setSales((prev) => [fake, ...prev].slice(0, 20))
       setUnreadNotifications((n) => n + 1)
-      toast.success(`Nova venda! ${fake.productName} — ${fmtBRL(fake.amount)} · ${fakeName}`)
+      showSaleToast(fake)
     }
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'v') {
