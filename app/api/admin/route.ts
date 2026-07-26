@@ -73,14 +73,6 @@ async function getStatus(userId: string, isMaster: boolean) {
     select: { email: true, name: true },
     orderBy: { createdAt: 'asc' },
   })
-  // Último e-book gerado no sistema (qualquer usuário) com preço configurado
-  // — usado só pelo atalho de simulação de notificação de venda (dev/QA),
-  // nunca grava nada, é só leitura.
-  const lastEbookWithPrice = await prisma.ebookProduct.findFirst({
-    where: { price: { not: null } },
-    orderBy: { createdAt: 'desc' },
-    select: { name: true, price: true },
-  })
   const caktoConfigRows = await prisma.appConfig.findMany({
     where: { key: { in: Object.values(CAKTO_CHECKOUT_URL_KEYS) } },
   })
@@ -108,7 +100,6 @@ async function getStatus(userId: string, isMaster: boolean) {
     },
     demoStructuresCount: demoStructures,
     app: { users: totals[0], structures: totals[1], sales: totals[2], integrations: totals[3] },
-    lastEbook: lastEbookWithPrice ? { name: lastEbookWithPrice.name, price: lastEbookWithPrice.price } : null,
   }
 }
 

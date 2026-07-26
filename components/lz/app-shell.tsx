@@ -74,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const cursorRef = useRef<string | null>(null)
   const bootstrapped = useRef(false)
   const lastFakeNameRef = useRef<string | null>(null)
+  const simulatingRef = useRef(false)
 
   useEffect(() => {
     fetch('/api/me')
@@ -123,38 +124,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!me?.isAdmin) return
     async function simulateSale() {
-      const res = await fetch('/api/admin').catch(() => null)
-      if (!res?.ok) return
-      const d = await res.json().catch(() => null)
-      const lastEbook: { name: string; price: number } | null = d?.status?.lastEbook ?? null
-      if (!lastEbook) {
-        toast.error('Simulação: nenhum e-book com preço configurado ainda.')
-        return
-      }
-      let fakeName = FAKE_BUYER_NAMES[Math.floor(Math.random() * FAKE_BUYER_NAMES.length)]
-      if (FAKE_BUYER_NAMES.length > 1) {
-        while (fakeName === lastFakeNameRef.current) {
-          fakeName = FAKE_BUYER_NAMES[Math.floor(Math.random() * FAKE_BUYER_NAMES.length)]
+      if (simulatingRef.current) return // já tem uma rodando — ignora até terminar
+      simulatingRef.current = true
+      try {
+        const res = await fetch('/api/admin/last-ebook').catch(() => null)
+        if (!res?.ok) return
+        const d = await res.json().catch(() => null)
+        const lastEbook: { name: string; price: number } | null = d?.lastEbook ?? null
+        if (!lastEbook) {
+          toast.error('Simulação: nenhum e-book com preço configurado ainda.')
+          return
         }
-      }
-      lastFakeNameRef.current = fakeName
+        let fakeName = FAKE_BUYER_NAMES[Math.floor(Math.random() * FAKE_BUYER_NAMES.length)]
+        if (FAKE_BUYER_NAMES.length > 1) {
+          while (fakeName === lastFakeNameRef.current) {
+            fakeName = FAKE_BUYER_NAMES[Math.floor(Math.random() * FAKE_BUYER_NAMES.length)]
+          }
+        }
+        lastFakeNameRef.current = fakeName
 
-      const fake: SaleNotification = {
-        id: `sim-${Date.now()}`,
-        amount: lastEbook.price,
-        productName: lastEbook.name,
-        buyerLabel: fakeName,
-        createdAt: new Date().toISOString(),
+        const fake: SaleNotification = {
+          id: `sim-${Date.now()}`,
+          amount: lastEbook.price,
+          productName: lastEbook.name,
+          buyerLabel: fakeName,
+          createdAt: new Date().toISOString(),
+        }
+        setSales((prev) => [fake, ...prev].slice(0, 20))
+        setUnreadNotifications((n) => n + 1)
+        showSaleToast(fake)
+        // Painel (se estiver aberto) escuta esse evento pra dar um "empurrão"
+        // visual nos números — só em memória, nunca grava nada; some ao
+        // recarregar a página, igual o resto dessa simulação.
+        window.dispatchEvent(new CustomEvent('ib:simulated-sale', { detail: { amount: fake.amount } }))
+      } finally {
+        simulatingRef.current = false
       }
-      setSales((prev) => [fake, ...prev].slice(0, 20))
-      setUnreadNotifications((n) => n + 1)
-      showSaleToast(fake)
-      // Painel (se estiver aberto) escuta esse evento pra dar um "empurrão"
-      // visual nos números — só em memória, nunca grava nada; some ao
-      // recarregar a página, igual o resto dessa simulação.
-      window.dispatchEvent(new CustomEvent('ib:simulated-sale', { detail: { amount: fake.amount } }))
     }
     function onKeyDown(e: KeyboardEvent) {
+      // e.repeat descarta os eventos repetidos que o navegador dispara
+      // sozinho enquanto as teclas ficam seguradas (era a causa da "rajada"
+      // de notificações de uma vez só).
+      if (e.repeat) return
       if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'v') {
         e.preventDefault()
         simulateSale()
