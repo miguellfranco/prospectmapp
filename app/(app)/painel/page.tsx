@@ -20,6 +20,7 @@ interface PanelData {
   salesCountAllTime: number
   counts: { structures: number; ebooks: number; landings: number; integrations: number }
   userName: string | null
+  hideStartupChecklist: boolean
   structures: {
     id: string; niche: string; subNiche: string | null; title: string; status: string
     createdAt: string; productName: string | null; price: number | null
@@ -242,8 +243,9 @@ export default function PainelPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          {/* Checklist de primeiros passos (some quando tudo estiver feito) */}
-          {!allDone && (
+          {/* Checklist de primeiros passos (some quando tudo estiver feito, ou
+              pra sempre na conta do dono, a pedido dele) */}
+          {!allDone && !data.hideStartupChecklist && (
             <div className="lz-card p-6">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Primeiros passos</p>

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/session'
+import { isMasterUser } from '@/lib/plan'
 import { prisma } from '@/lib/db'
 
 // Métricas do painel InfoBook: faturamento real (vendas recebidas via webhook
@@ -86,6 +87,11 @@ export async function GET() {
         integrations: integrationsConnected,
       },
       userName: user.name ?? null,
+      // Só o dono da conta principal (MASTER_EMAIL) — pedido dele mesmo, pra
+      // não ver mais o card "Primeiros passos" na própria tela. Puramente
+      // visual: não cria integração nenhuma, não muda counts.integrations,
+      // não afeta nenhum outro usuário.
+      hideStartupChecklist: isMasterUser(user),
       structures: structures.map((s) => ({
         id: s.id,
         niche: s.niche,
