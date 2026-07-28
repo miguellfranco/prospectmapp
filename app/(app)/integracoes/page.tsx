@@ -16,31 +16,14 @@ interface Integration {
   webhookPath: string
 }
 
+// Kiwify e Hotmart saíram da lista de provedores conectáveis (2026-07-26, a
+// pedido do usuário) — a API pública delas não cria produto (reconfirmado
+// direto na documentação oficial, ver lib/gateways.ts), então não trazem
+// nenhuma automação real. Cakto é o único gateway com criação de produto de
+// verdade, por isso é o único oferecido aqui agora. O código de conexão/
+// webhook da Kiwify e Hotmart continua funcionando (lib/gateways.ts,
+// webhooks/vendas) — só não aparece mais como opção pra conectar de novo.
 const PROVIDERS = [
-  {
-    id: 'kiwify',
-    name: 'Kiwify',
-    steps: [
-      'Acesse dashboard.kiwify.com.br e faça login na sua conta Kiwify.',
-      'No menu lateral, procure "Apps" (ou Configurações → Desenvolvedor) e clique em "API".',
-      'Clique em "Criar chave de API" — a Kiwify vai mostrar o Client ID, o Client Secret e o Account ID.',
-      'Copie e cole cada um nos campos abaixo (o Secret aparece uma única vez — copie na hora!).',
-      'Clique em "Validar e salvar" — nós testamos a conexão direto com a Kiwify.',
-      'Depois de salvar, copie a URL do webhook que aparece no cartão da integração e cadastre na Kiwify em Apps → Webhooks, marcando o evento "Compra aprovada" — suas vendas passam a aparecer no painel automaticamente.',
-    ],
-  },
-  {
-    id: 'hotmart',
-    name: 'Hotmart',
-    steps: [
-      'Acesse app.hotmart.com e faça login na sua conta Hotmart.',
-      'No menu, vá em "Ferramentas" e procure "Credenciais (API e SSO)".',
-      'Clique em "Criar credencial" e dê um nome (ex: InfoBook).',
-      'Copie o Client ID e o Client Secret e cole nos campos abaixo.',
-      'Clique em "Validar e salvar" — nós testamos a conexão direto com a Hotmart.',
-      'Depois de salvar, copie a URL do webhook do cartão da integração e cadastre na Hotmart em Ferramentas → Webhook (evento "Compra aprovada").',
-    ],
-  },
   {
     id: 'cakto',
     name: 'Cakto',
@@ -81,7 +64,7 @@ const PROVIDERS = [
 export default function IntegracoesPage() {
   const [integrations, setIntegrations] = useState<Integration[] | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [provider, setProvider] = useState('kiwify')
+  const [provider, setProvider] = useState('cakto')
   const [label, setLabel] = useState('')
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
@@ -169,7 +152,7 @@ export default function IntegracoesPage() {
       <PageHeader
         title="Integrações de"
         highlight="Pagamento"
-        description="Conecte sua conta Kiwify, Hotmart ou Cakto para vincular produtos e receber as vendas no painel."
+        description="Conecte sua conta Cakto para criar produtos automaticamente e receber as vendas no painel."
         actions={
           <button onClick={() => setShowForm((v) => !v)} className="lz-btn-primary inline-flex items-center gap-2">
             <Plus size={16} /> Conectar gateway
@@ -216,17 +199,9 @@ export default function IntegracoesPage() {
             </ol>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Apelido (opcional)</label>
-              <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Conta principal" className="lz-input" maxLength={80} />
-            </div>
-            {provider === 'kiwify' && (
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Account ID (opcional)</label>
-                <input value={accountId} onChange={(e) => setAccountId(e.target.value)} placeholder="ID da conta Kiwify" className="lz-input font-jet text-xs" />
-              </div>
-            )}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Apelido (opcional)</label>
+            <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex: Conta principal" className="lz-input" maxLength={80} />
           </div>
 
           {provider === 'netlify' ? (
@@ -272,7 +247,7 @@ export default function IntegracoesPage() {
           <EmptyState
             icon={Plug}
             title="Nenhum gateway conectado"
-            subtitle="Conecte sua conta Kiwify ou Hotmart para vincular seus produtos e acompanhar o faturamento no painel."
+            subtitle="Conecte sua conta Cakto para vincular seus produtos e acompanhar o faturamento no painel."
             action={
               <button onClick={() => setShowForm(true)} className="lz-btn-primary inline-flex items-center gap-2">
                 <Plus size={16} /> Conectar gateway

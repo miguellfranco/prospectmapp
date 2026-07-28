@@ -63,10 +63,10 @@ function EstruturaWizard() {
   const [ebookAccent, setEbookAccent] = useState('#7c3aed')
   const autoStarted = useRef(false)
 
-  // Passo 2 — produto
+  // Passo 2 — produto (só Cakto cria produto automático; Kiwify/Hotmart não
+  // suportam isso na API deles — ver lib/gateways.ts)
   const [priceInput, setPriceInput] = useState('')
   const [integrations, setIntegrations] = useState<Integration[] | null>(null)
-  const [selectedIntegration, setSelectedIntegration] = useState<string>('')
   const [checkoutInput, setCheckoutInput] = useState('')
   const [savingProduct, setSavingProduct] = useState(false)
   const [gatewayMessage, setGatewayMessage] = useState<string | null>(null)
@@ -96,7 +96,6 @@ function EstruturaWizard() {
     setEbookAccent(s.product?.accentColor ?? '#7c3aed')
     if (s.product?.price != null) setPriceInput(s.product.price.toFixed(2).replace('.', ','))
     else setPriceInput(suggestPrice(s.niche).toFixed(2).replace('.', ','))
-    if (s.product?.paymentIntegrationId) setSelectedIntegration(s.product.paymentIntegrationId)
     if (s.product?.checkoutUrl) setCheckoutInput(s.product.checkoutUrl)
     if (s.landingPage) { setPrimaryColor(s.landingPage.primaryColor); setSecondaryColor(s.landingPage.secondaryColor); setUserUrlInput(s.landingPage.userHostedUrl ?? '') }
     setPainInput(s.title)
@@ -242,12 +241,13 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
     setSavingProduct(true)
     setGatewayMessage(null)
     try {
+      const caktoIntegration = integrations?.find((i) => i.provider === 'cakto' && i.status === 'conectado')
       const res = await fetch(`/api/estruturas/${id}/produto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           price,
-          paymentIntegrationId: selectedIntegration || null,
+          paymentIntegrationId: caktoIntegration?.id ?? null,
           checkoutUrl: checkoutInput.trim() || null,
         }),
       })
@@ -558,33 +558,32 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Gateway de pagamento
-              </label>
-              {integrations === null ? (
-                <div className="h-11 rounded-xl skeleton-shimmer" />
-              ) : integrations.length === 0 ? (
+            {(() => {
+              const caktoIntegration = integrations?.find((i) => i.provider === 'cakto' && i.status === 'conectado')
+              if (integrations === null) return <div className="h-11 rounded-xl skeleton-shimmer" />
+              if (caktoIntegration) {
+                return (
+                  <div className="p-4 rounded-xl text-sm flex items-start gap-3"
+                    style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: 'var(--text-secondary)' }}>
+                    <Plug size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--success)' }} />
+                    <span>
+                      Cakto conectada{caktoIntegration.label ? ` (${caktoIntegration.label})` : ''} — o produto vai ser criado
+                      automaticamente lá ao cadastrar. Só falta colar o link de checkout dela abaixo.
+                    </span>
+                  </div>
+                )
+              }
+              return (
                 <div className="p-4 rounded-xl text-sm flex items-start gap-3"
                   style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--text-secondary)' }}>
                   <Plug size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
                   <span>
-                    Você ainda não conectou nenhum gateway.{' '}
-                    <Link href="/integracoes" className="underline" style={{ color: 'var(--purple-soft)' }}>Conectar Kiwify / Hotmart</Link>
-                    {' '}— ou siga sem gateway e cole o link de checkout abaixo.
+                    Conecte sua conta <Link href="/integracoes" className="underline" style={{ color: 'var(--purple-soft)' }}>Cakto</Link>
+                    {' '}para o produto ser criado automaticamente — ou siga sem conectar e cole o link de checkout manualmente abaixo.
                   </span>
                 </div>
-              ) : (
-                <select value={selectedIntegration} onChange={(e) => setSelectedIntegration(e.target.value)} className="lz-input">
-                  <option value="">Sem gateway (colar link manualmente)</option>
-                  {integrations.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {(i.label || i.provider).toUpperCase()} {i.status === 'conectado' ? '· conectado' : '· com erro'}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+              )
+            })()}
 
             {gatewayMessage && (
               <div className="p-4 rounded-xl text-sm"
@@ -599,7 +598,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
               </label>
               <input
                 value={checkoutInput} onChange={(e) => setCheckoutInput(e.target.value)}
-                placeholder="https://pay.kiwify.com.br/..." className="lz-input font-jet text-xs"
+                placeholder="https://pay.cakto.com.br/..." className="lz-input font-jet text-xs"
               />
               <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
                 O botão de compra da sua página de vendas vai apontar para este link.
