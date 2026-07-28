@@ -39,10 +39,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let externalProductId: string | null = structure.product.externalProductId
   let checkoutUrl: string | null = manualCheckoutUrl ?? structure.product.checkoutUrl
 
+  // Produto já criado nessa MESMA integração antes (ex: usuário só voltou
+  // pra atualizar o link de checkout na tela da Página) — não cria de novo,
+  // senão duplicaria o produto no gateway a cada vez que salvar algo aqui.
+  const alreadyCreated = Boolean(
+    paymentIntegrationId && paymentIntegrationId === structure.product.paymentIntegrationId && externalProductId,
+  )
+
   // Tenta o cadastro automático no gateway — os adaptadores são honestos:
   // se a API pública do provedor não suportar criação de produto, retornam
   // supported=false com instruções, e o usuário cola o link de checkout.
-  if (paymentIntegrationId) {
+  if (paymentIntegrationId && !alreadyCreated) {
     const integration = await prisma.paymentIntegration.findFirst({
       where: { id: paymentIntegrationId, userId: user.id },
     })

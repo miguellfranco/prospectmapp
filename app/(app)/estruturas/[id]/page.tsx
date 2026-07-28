@@ -267,6 +267,24 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
   async function handleGenerateLanding() {
     setGeneratingLanding(true)
     try {
+      // O link de checkout agora é editado aqui (Passo 3), não no Passo 2 —
+      // salva antes de gerar a página, preservando a integração já vinculada
+      // (senão zeraria o vínculo com a Cakto ao enviar sem esse campo).
+      const newCheckoutUrl = checkoutInput.trim() || null
+      if (newCheckoutUrl !== (structure?.product?.checkoutUrl ?? null) && structure?.product?.price != null) {
+        const resProduto = await fetch(`/api/estruturas/${id}/produto`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            price: structure.product.price,
+            paymentIntegrationId: structure.product.paymentIntegrationId,
+            checkoutUrl: newCheckoutUrl,
+          }),
+        })
+        const dProduto = await resProduto.json().catch(() => ({}))
+        if (!resProduto.ok) throw new Error(dProduto?.error ?? 'Erro ao salvar o link de checkout.')
+      }
+
       const res = await fetch(`/api/estruturas/${id}/landing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -592,18 +610,9 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
-                Link de checkout <span style={{ color: 'var(--text-muted)' }}>(do produto no seu gateway)</span>
-              </label>
-              <input
-                value={checkoutInput} onChange={(e) => setCheckoutInput(e.target.value)}
-                placeholder="https://pay.cakto.com.br/..." className="lz-input font-jet text-xs"
-              />
-              <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                O botão de compra da sua página de vendas vai apontar para este link.
-              </p>
-            </div>
+            <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              O link de checkout é colado na próxima tela (Página de Vendas), direto onde ele é usado no botão de compra.
+            </p>
 
             <button onClick={handleSaveProduct} disabled={savingProduct} className="lz-btn-primary w-full inline-flex items-center justify-center gap-2">
               {savingProduct ? <Loader2 size={16} className="animate-spin" /> : <Tag size={16} />}
@@ -658,6 +667,19 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                   Preço do produto
                 </label>
                 <input value={structure.product?.price != null ? brl(structure.product.price) : ''} disabled className="lz-input opacity-70 font-jet" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Link de checkout <span style={{ color: 'var(--text-muted)' }}>(do produto no seu gateway)</span>
+                </label>
+                <input
+                  value={checkoutInput} onChange={(e) => setCheckoutInput(e.target.value)}
+                  placeholder="https://pay.cakto.com.br/..." className="lz-input font-jet text-xs"
+                />
+                <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                  O botão de compra desta página vai apontar para este link.
+                </p>
               </div>
 
               <div>
