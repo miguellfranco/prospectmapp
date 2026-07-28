@@ -66,8 +66,13 @@ export async function GET() {
       last30 += amount
       if (s.paidAt >= start7d) last7 += amount
       if (s.paidAt >= startOfToday) today += amount
+      // Kiwify/Hotmart não são mais gateways oferecidos (só Cakto, ver
+      // Integrações) — o dinheiro continua contando no faturamento total
+      // acima, só não aparece mais quebrado por gateway nessa lista.
       const gw = s.gateway ?? 'outro'
-      byGateway[gw] = (byGateway[gw] ?? 0) + amount
+      if (gw !== 'kiwify' && gw !== 'hotmart') {
+        byGateway[gw] = (byGateway[gw] ?? 0) + amount
+      }
       const key = s.paidAt.toISOString().slice(0, 10)
       if (key in dailyMap) dailyMap[key] += amount
     }
