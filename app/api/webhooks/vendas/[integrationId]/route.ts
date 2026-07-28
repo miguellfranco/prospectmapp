@@ -3,8 +3,10 @@ export const maxDuration = 30
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { decryptJson } from '@/lib/crypto'
+import { getCaktoOrder } from '@/lib/cakto'
 
-// Webhook de vendas dos gateways (Kiwify / Hotmart / genérico).
+// Webhook de vendas dos gateways (Kiwify / Hotmart / Cakto / genérico).
 // O usuário cadastra esta URL no painel do gateway; o id da integração (cuid
 // não enumerável) funciona como segredo do endpoint. Só registramos vendas
 // claramente PAGAS — nunca criamos vendas sintéticas.
@@ -51,6 +53,64 @@ function parseHotmart(body: any): ParsedSale | null {
   }
 }
 
+// A Cakto (diferente de Kiwify/Hotmart) tem valor ambíguo no corpo do webhook
+// (pode vir em reais OU centavos — pegadinha já documentada em lib/cakto.ts)
+// e produtos de preço livre (não são só os 3 planos fixos do InfoBook), então
+// NUNCA confiamos no valor do corpo: reconfirmamos o pedido direto na API da
+// Cakto (com as credenciais desta integração específica, não as do InfoBook)
+// antes de registrar qualquer coisa.
+async function parseCakto(body: any, integration: { credentialsEnc: string; userId: string }): Promise<ParsedSale | null> {
+  const event = String(body?.event ?? body?.type ?? '').toLowerCase()
+  if (!['purchase_approved', 'purchase_completed'].includes(event)) return null
+
+  const data = body?.data ?? body
+  const orderId = data?.id ?? data?.order?.id ?? data?.order_id ?? body?.id
+  if (!orderId) return null
+
+  let creds: { clientId?: string; clientSecret?: string }
+  try {
+    creds = decryptJson(integration.credentialsEnc)
+  } catch {
+    return null
+  }
+  if (!creds?.clientId || !creds?.clientSecret) return null
+
+  const order = await getCaktoOrder(String(orderId), { clientId: creds.clientId, clientSecret: creds.clientSecret }).catch((e) => {
+    console.error('Webhook Cakto: falha ao reconfirmar pedido na API:', e)
+    return null
+  })
+  if (!order) return null
+  if (!['paid', 'authorized'].includes(order.status)) return null
+  if (typeof order.amount !== 'number' || order.amount <= 0) return null
+
+  // Desambigua reais-vs-centavos comparando com o preço configurado pelo
+  // usuário pro produto (se achar um pelo nome) — preço de infoproduto é
+  // livre, então não dá pra usar âncoras fixas como em mapCaktoPlan().
+  let amount = order.amount
+  const match = order.productName
+    ? await prisma.ebookProduct.findFirst({
+        where: { name: { equals: order.productName, mode: 'insensitive' }, structure: { userId: integration.userId } },
+        select: { price: true },
+      })
+    : null
+  if (match?.price) {
+    const asIsDiff = Math.abs(amount - match.price)
+    const asCentsDiff = Math.abs(amount / 100 - match.price)
+    if (asCentsDiff < asIsDiff) amount = amount / 100
+  } else if (amount >= 1000) {
+    // Sem produto pra comparar: só assume centavos se o valor for grande
+    // demais pra ser um preço de infoproduto direto em reais.
+    amount = amount / 100
+  }
+
+  return {
+    amount,
+    transactionId: `cakto_${orderId}`,
+    buyerEmail: order.customerEmail,
+    productName: order.productName,
+  }
+}
+
 function parseGeneric(body: any): ParsedSale | null {
   const status = String(body?.status ?? '').toLowerCase()
   if (status && !['paid', 'approved', 'completed'].includes(status)) return null
@@ -78,6 +138,7 @@ export async function POST(req: NextRequest, { params }: { params: { integration
     let sale: ParsedSale | null = null
     if (integration.provider === 'kiwify') sale = parseKiwify(body)
     else if (integration.provider === 'hotmart') sale = parseHotmart(body)
+    else if (integration.provider === 'cakto') sale = await parseCakto(body, integration)
     else sale = parseGeneric(body) ?? parseKiwify(body) ?? parseHotmart(body)
 
     if (!sale) {

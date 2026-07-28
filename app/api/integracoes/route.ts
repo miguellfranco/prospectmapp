@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
   const provider = String(body?.provider ?? '').toLowerCase() as GatewayProvider
   const label = body?.label ? String(body.label).trim().slice(0, 80) : null
 
-  if (!['kiwify', 'hotmart', 'netlify', 'outro'].includes(provider)) {
-    return NextResponse.json({ error: 'Provedor inválido. Use kiwify, hotmart, netlify ou outro.' }, { status: 400 })
+  if (!['kiwify', 'hotmart', 'cakto', 'netlify', 'outro'].includes(provider)) {
+    return NextResponse.json({ error: 'Provedor inválido. Use kiwify, hotmart, cakto, netlify ou outro.' }, { status: 400 })
   }
 
   const creds = {

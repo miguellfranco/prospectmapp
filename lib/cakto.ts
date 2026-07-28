@@ -5,18 +5,32 @@
 
 const CAKTO_API = 'https://api.cakto.com.br'
 
-let tokenCache: { token: string; expiresAt: number } | null = null
+export interface CaktoCreds {
+  clientId: string
+  clientSecret: string
+}
+
+// Cacheado por clientId — o InfoBook usa uma conta Cakto própria (env vars,
+// venda dos planos do próprio SaaS) e, a partir de agora, cada usuário final
+// também pode conectar a SUA PRÓPRIA conta Cakto (Integrações, venda dos
+// e-books dele) — um Map evita as duas contas colidirem no mesmo cache.
+const tokenCache = new Map<string, { token: string; expiresAt: number }>()
 
 export function caktoConfigured(): boolean {
   return Boolean(process.env.CAKTO_CLIENT_ID && process.env.CAKTO_CLIENT_SECRET)
 }
 
-export async function getCaktoToken(): Promise<string> {
-  if (tokenCache && Date.now() < tokenCache.expiresAt) return tokenCache.token
-
-  const clientId = process.env.CAKTO_CLIENT_ID
-  const clientSecret = process.env.CAKTO_CLIENT_SECRET
+function resolveCreds(creds?: CaktoCreds): CaktoCreds {
+  const clientId = creds?.clientId ?? process.env.CAKTO_CLIENT_ID
+  const clientSecret = creds?.clientSecret ?? process.env.CAKTO_CLIENT_SECRET
   if (!clientId || !clientSecret) throw new Error('CAKTO_CLIENT_ID/CAKTO_CLIENT_SECRET não configurados')
+  return { clientId, clientSecret }
+}
+
+export async function getCaktoToken(creds?: CaktoCreds): Promise<string> {
+  const { clientId, clientSecret } = resolveCreds(creds)
+  const cached = tokenCache.get(clientId)
+  if (cached && Date.now() < cached.expiresAt) return cached.token
 
   const res = await fetch(`${CAKTO_API}/public_api/token/`, {
     method: 'POST',
@@ -33,7 +47,7 @@ export async function getCaktoToken(): Promise<string> {
 
   const ttlMs = (Number(data.expires_in) || 3600) * 1000
   // renova 5 min antes de expirar para nunca usar token vencido
-  tokenCache = { token: data.access_token, expiresAt: Date.now() + ttlMs - 5 * 60 * 1000 }
+  tokenCache.set(clientId, { token: data.access_token, expiresAt: Date.now() + ttlMs - 5 * 60 * 1000 })
   return data.access_token
 }
 
@@ -49,8 +63,8 @@ export interface CaktoOrder {
   raw: any
 }
 
-export async function getCaktoOrder(orderId: string): Promise<CaktoOrder | null> {
-  const token = await getCaktoToken()
+export async function getCaktoOrder(orderId: string, creds?: CaktoCreds): Promise<CaktoOrder | null> {
+  const token = await getCaktoToken(creds)
   const res = await fetch(`${CAKTO_API}/public_api/orders/${encodeURIComponent(orderId)}/`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
@@ -82,8 +96,8 @@ function unwrapList(data: any): any[] {
   return []
 }
 
-async function caktoGet(path: string): Promise<any> {
-  const token = await getCaktoToken()
+async function caktoGet(path: string, creds?: CaktoCreds): Promise<any> {
+  const token = await getCaktoToken(creds)
   const res = await fetch(`${CAKTO_API}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
@@ -95,8 +109,8 @@ async function caktoGet(path: string): Promise<any> {
   return res.json()
 }
 
-async function caktoPost(path: string, payload: any): Promise<any> {
-  const token = await getCaktoToken()
+async function caktoPost(path: string, payload: any, creds?: CaktoCreds): Promise<any> {
+  const token = await getCaktoToken(creds)
   const res = await fetch(`${CAKTO_API}${path}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -110,8 +124,8 @@ async function caktoPost(path: string, payload: any): Promise<any> {
   return res.json()
 }
 
-async function caktoPut(path: string, payload: any): Promise<any> {
-  const token = await getCaktoToken()
+async function caktoPut(path: string, payload: any, creds?: CaktoCreds): Promise<any> {
+  const token = await getCaktoToken(creds)
   const res = await fetch(`${CAKTO_API}${path}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -125,22 +139,22 @@ async function caktoPut(path: string, payload: any): Promise<any> {
   return res.json()
 }
 
-export async function listCaktoProducts(): Promise<any[]> {
-  return unwrapList(await caktoGet('/public_api/products/'))
+export async function listCaktoProducts(creds?: CaktoCreds): Promise<any[]> {
+  return unwrapList(await caktoGet('/public_api/products/', creds))
 }
 
-export async function getCaktoProduct(productId: string): Promise<any> {
-  return caktoGet(`/public_api/products/${encodeURIComponent(productId)}/`)
+export async function getCaktoProduct(productId: string, creds?: CaktoCreds): Promise<any> {
+  return caktoGet(`/public_api/products/${encodeURIComponent(productId)}/`, creds)
 }
 
-export async function createCaktoProduct(input: { name: string; description: string; price: number }): Promise<any> {
+export async function createCaktoProduct(input: { name: string; description: string; price: number }, creds?: CaktoCreds): Promise<any> {
   return caktoPost('/public_api/products/', {
     name: input.name,
     description: input.description,
     price: input.price.toFixed(2),
     type: 'unique',
     guarantee: 7, // garantia de 7 dias (direito de arrependimento do CDC)
-  })
+  }, creds)
 }
 
 // IMPORTANTE (testado e confirmado 2x em produção, não é suposição): apesar

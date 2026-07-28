@@ -42,6 +42,19 @@ const PROVIDERS = [
     ],
   },
   {
+    id: 'cakto',
+    name: 'Cakto',
+    steps: [
+      'Acesse app.cakto.com.br e faça login na sua conta Cakto.',
+      'No menu, vá em "Integrações" → "Cakto API" e clique em "Criar Chave de API".',
+      'Dê um nome (ex: InfoBook) e marque pelo menos os escopos "write", "products" e "webhooks" — sem eles a criação automática de produto não funciona.',
+      'Copie o Client ID e o Client Secret (o Secret aparece uma única vez — copie na hora!) e cole nos campos abaixo.',
+      'Clique em "Validar e salvar" — nós testamos a conexão direto com a Cakto.',
+      'Diferente da Kiwify/Hotmart, o InfoBook CRIA o produto na Cakto automaticamente pra você no Passo 2 do wizard. Só falta 1 coisa manual: copiar o link de checkout (app.cakto.com.br → Produtos → aba "Links") — a API da Cakto não entrega esse link pronto.',
+      'Depois de salvar, copie a URL do webhook do cartão da integração e cadastre na Cakto em Integrações → Webhooks, marcando o evento "Compra aprovada".',
+    ],
+  },
+  {
     id: 'netlify',
     name: 'Netlify',
     steps: [
@@ -156,7 +169,7 @@ export default function IntegracoesPage() {
       <PageHeader
         title="Integrações de"
         highlight="Pagamento"
-        description="Conecte sua conta Kiwify ou Hotmart para vincular produtos e receber as vendas no painel."
+        description="Conecte sua conta Kiwify, Hotmart ou Cakto para vincular produtos e receber as vendas no painel."
         actions={
           <button onClick={() => setShowForm((v) => !v)} className="lz-btn-primary inline-flex items-center gap-2">
             <Plus size={16} /> Conectar gateway
@@ -319,7 +332,7 @@ export default function IntegracoesPage() {
                     </button>
                   </div>
                   <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>
-                    Cadastre esta URL nos webhooks do {i.provider === 'kiwify' ? 'painel da Kiwify (evento: Compra aprovada)' : i.provider === 'hotmart' ? 'painel da Hotmart (evento: Compra aprovada)' : 'seu gateway'} — cada venda aprovada aparece automaticamente no seu painel.
+                    Cadastre esta URL nos webhooks do {i.provider === 'kiwify' ? 'painel da Kiwify (evento: Compra aprovada)' : i.provider === 'hotmart' ? 'painel da Hotmart (evento: Compra aprovada)' : i.provider === 'cakto' ? 'painel da Cakto (Integrações → Webhooks, evento: Compra aprovada)' : 'seu gateway'} — cada venda aprovada aparece automaticamente no seu painel.
                   </p>
                 </div>
                 )}
