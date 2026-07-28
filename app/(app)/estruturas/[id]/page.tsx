@@ -265,6 +265,12 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
   }
 
   async function handleGenerateLanding() {
+    if (!checkoutInput.trim()) {
+      const confirmed = window.confirm(
+        'Você ainda não colou o link de checkout. A página vai sair com o botão de compra escrito "Link de compra ainda não configurado" até você colar esse link aqui e gerar de novo. Gerar mesmo assim?'
+      )
+      if (!confirmed) return
+    }
     setGeneratingLanding(true)
     try {
       // O link de checkout agora é editado aqui (Passo 3), não no Passo 2 —
@@ -676,10 +682,23 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                 <input
                   value={checkoutInput} onChange={(e) => setCheckoutInput(e.target.value)}
                   placeholder="https://pay.cakto.com.br/..." className="lz-input font-jet text-xs"
+                  style={!checkoutInput.trim() ? { borderColor: 'var(--warning)' } : undefined}
                 />
-                <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                  O botão de compra desta página vai apontar para este link.
-                </p>
+                {checkoutInput.trim() ? (
+                  <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                    O botão de compra desta página vai apontar para este link.
+                  </p>
+                ) : (
+                  <div className="mt-2 p-3 rounded-lg text-[11px] flex items-start gap-2"
+                    style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: 'var(--text-secondary)' }}>
+                    <Plug size={13} className="shrink-0 mt-0.5" style={{ color: 'var(--warning)' }} />
+                    <span>
+                      Vazio ainda. Mesmo com a Cakto conectada, ela cria o produto mas NÃO entrega esse link sozinha — copie em{' '}
+                      <strong style={{ color: 'var(--text-primary)' }}>app.cakto.com.br → Produtos → abra o produto → aba &quot;Links&quot;</strong> e
+                      cole aqui, senão o botão de compra sai como &quot;Link de compra ainda não configurado&quot;.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
