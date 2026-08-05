@@ -910,7 +910,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
               <div className="mt-5 space-y-2 max-h-80 overflow-y-auto">
                 {structure.outreachGroups.map((g) => (
                   <a
-                    key={g.id} href={g.groupUrl} target="_blank" rel="noreferrer"
+                    key={g.id} href={g.groupUrl} target="_blank" rel="noreferrer" title={g.groupName}
                     className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:brightness-125"
                     style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
                   >
@@ -922,7 +922,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                   </a>
                 ))}
                 <p className="text-[11px] pt-1" style={{ color: 'var(--text-muted)' }}>
-                  Os links de Facebook abrem a busca de grupos direto dentro do Facebook, já filtrada pelo tema. Os de WhatsApp abrem uma busca no Google já otimizada para achar links de convite reais. Navegue pelos resultados, confira o grupo antes de entrar e respeite as regras de cada comunidade.
+                  Os links de Facebook "(via Google)" sempre abrem — leva pra uma busca no Google já filtrada pra grupos do tema. O link "Busca direta no Facebook" é mais rápido quando funciona, mas só abre certo se você já estiver logado no Facebook nesse navegador (senão mostra "not found" — nesse caso use o link via Google). Os de WhatsApp abrem uma busca no Google já otimizada para achar links de convite reais. Navegue pelos resultados, confira o grupo antes de entrar e respeite as regras de cada comunidade.
                 </p>
               </div>
             )}

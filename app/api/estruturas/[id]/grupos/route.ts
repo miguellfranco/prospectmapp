@@ -13,15 +13,17 @@ const COUNTRY_LABELS: Record<string, string> = { BR: 'Brasil', PT: 'Portugal', U
 
 // Passo 4 do wizard — descoberta de comunidades do nicho.
 //
-// IMPORTANTE (2026-07-23): a versão anterior usava
-// "facebook.com/search/groups/?q=..." — testado direto e confirmado que dá
-// 404 (a Facebook removeu essa URL de busca por tipo pra quem não está
-// logado, se é que um dia funcionou assim). NÃO reintroduzir esse link sem
-// testar de novo primeiro. Voltamos pro formato comprovadamente confiável:
-// busca no Google (carrega sempre, sem exigir login, sem 404) restrita ao
-// domínio certo — não é um resultado "perfeito" (o usuário ainda precisa
-// escolher o grupo na lista de resultados), mas é um link que NUNCA quebra,
-// o que importa mais do que um link "inteligente" que não abre.
+// IMPORTANTE (retestado em 2026-08-05, dessa vez com headers de navegador de
+// verdade pra isolar bot-block de 404 real): "facebook.com/search/groups/?q=..."
+// continua dando 404 pra quem NÃO está logado no Facebook (testado via curl
+// com headers completos — a home carrega 200 normal, só esse path específico
+// 404). Ou seja, não é bloqueio genérico de bot — é a própria Facebook que
+// exige sessão logada pra essa busca. Como não dá pra saber de antemão se
+// quem vai clicar está logado, NÃO usamos isso como único link (quebraria
+// pra quem não estiver logado, sem aviso) — mas oferecemos como opção EXTRA,
+// além do link de busca no Google que SEMPRE abre (esse continua sendo o
+// principal/confiável). NÃO trocar o link do Google pelo direto sem testar
+// nada disso de novo primeiro.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -65,10 +67,23 @@ Responda APENAS com JSON válido:
     const facebookRows = keywords.map((kw) => ({
       structureId: structure.id,
       platform: 'facebook',
-      groupName: `Grupos de Facebook sobre "${kw}"`,
+      groupName: `Grupos de Facebook sobre "${kw}" (via Google)`,
       groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${kw}`)}`,
       country,
     }))
+
+    // Busca nativa da Facebook — mais rápida e direta que o Google quando
+    // funciona, mas SÓ funciona pra quem já está logado no Facebook (ver nota
+    // no topo do arquivo); por isso é uma linha EXTRA, não substitui a de
+    // cima. Uma só, pelo nicho amplo (não por palavra-chave, senão dobra a
+    // lista toda).
+    const facebookDirectRow = {
+      structureId: structure.id,
+      platform: 'facebook',
+      groupName: `Busca direta no Facebook — ${structure.niche} (só funciona se você já estiver logado)`,
+      groupUrl: `https://www.facebook.com/search/groups/?q=${encodeURIComponent(structure.niche)}`,
+      country,
+    }
 
     // gruposwhats.app é um diretório real de convites de WhatsApp (indicado
     // pelo usuário, slugs conferidos direto no sitemap oficial do site — ver
@@ -92,7 +107,7 @@ Responda APENAS com JSON válido:
           country,
         }))
 
-    const rows = [...facebookRows, ...whatsappRows]
+    const rows = [...facebookRows, facebookDirectRow, ...whatsappRows]
 
     const groups = rows.length ? await prisma.$transaction(rows.map((data) => prisma.outreachGroup.create({ data }))) : []
 
