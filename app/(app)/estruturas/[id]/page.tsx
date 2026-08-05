@@ -922,7 +922,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
                   </a>
                 ))}
                 <p className="text-[11px] pt-1" style={{ color: 'var(--text-muted)' }}>
-                  Os links de Facebook "(via Google)" sempre abrem — leva pra uma busca no Google já filtrada pra grupos do tema. O link "Busca direta no Facebook" é mais rápido quando funciona, mas só abre certo se você já estiver logado no Facebook nesse navegador (senão mostra "not found" — nesse caso use o link via Google). Os de WhatsApp abrem uma busca no Google já otimizada para achar links de convite reais. Navegue pelos resultados, confira o grupo antes de entrar e respeite as regras de cada comunidade.
+                  Os links "Grupos de Facebook sobre..." abrem a busca direto dentro do Facebook — mais rápido, mas só funciona se você já estiver logado no Facebook nesse navegador. Se algum desses mostrar "not found", use o link "Busca no Google (reserva)", que sempre abre. Os de WhatsApp abrem uma busca no Google já otimizada para achar links de convite reais. Navegue pelos resultados, confira o grupo antes de entrar e respeite as regras de cada comunidade.
                 </p>
               </div>
             )}

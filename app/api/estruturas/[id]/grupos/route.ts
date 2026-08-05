@@ -64,24 +64,25 @@ Responda APENAS com JSON válido:
     // Regenerar substitui a lista anterior (mesmo país ou não — mantém a tela limpa)
     await prisma.outreachGroup.deleteMany({ where: { structureId: structure.id } })
 
+    // A pedido do usuário (2026-08-05): priorizar os links diretos do
+    // Facebook (1 por palavra-chave — maioria da lista) e deixar o Google só
+    // como reserva única (1 só, pelo nicho amplo) — antes era o contrário.
+    // O direto só funciona pra quem já está logado no Facebook nesse
+    // navegador (ver nota no topo do arquivo); se der "not found", a pessoa
+    // usa a linha via Google, que sempre abre.
     const facebookRows = keywords.map((kw) => ({
       structureId: structure.id,
       platform: 'facebook',
-      groupName: `Grupos de Facebook sobre "${kw}" (via Google)`,
-      groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${kw}`)}`,
+      groupName: `Grupos de Facebook sobre "${kw}"`,
+      groupUrl: `https://www.facebook.com/search/groups/?q=${encodeURIComponent(kw)}`,
       country,
     }))
 
-    // Busca nativa da Facebook — mais rápida e direta que o Google quando
-    // funciona, mas SÓ funciona pra quem já está logado no Facebook (ver nota
-    // no topo do arquivo); por isso é uma linha EXTRA, não substitui a de
-    // cima. Uma só, pelo nicho amplo (não por palavra-chave, senão dobra a
-    // lista toda).
     const facebookDirectRow = {
       structureId: structure.id,
       platform: 'facebook',
-      groupName: `Busca direta no Facebook — ${structure.niche} (só funciona se você já estiver logado)`,
-      groupUrl: `https://www.facebook.com/search/groups/?q=${encodeURIComponent(structure.niche)}`,
+      groupName: `Busca no Google (reserva, se o link acima der "not found") — ${structure.niche}`,
+      groupUrl: `https://www.google.com/search?q=${encodeURIComponent(`site:facebook.com/groups ${structure.niche}`)}`,
       country,
     }
 
