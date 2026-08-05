@@ -315,7 +315,14 @@ hr{border:none;border-top:1px solid #ddd;margin:2.5em 0}</style></head><body>${m
       const res = await fetch(`/api/estruturas/${id}/publicar`, { method: 'POST' })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(d?.error ?? 'Falha ao publicar.')
-      toast.success('Página publicada na sua Netlify! 🎉')
+      // O link já volta pronto na resposta (a API já salva o mesmo valor em
+      // landingPage.userHostedUrl) — mostra na hora, sem precisar rolar a
+      // tela até o card verde "Sua página no ar" pra achar.
+      toast.success('Página publicada! 🎉', {
+        description: d.url,
+        duration: 15_000,
+        action: d.url ? { label: 'Copiar link', onClick: () => copyText(d.url, 'Link copiado!') } : undefined,
+      })
       await load()
     } catch (e: any) {
       toast.error(e.message)
